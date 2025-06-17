@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Text, TextInput, Button, Menu, Divider } from 'react-native-paper';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { Text, TextInput } from 'react-native-paper';
 import Constants from '../constants';
 
 type SquareComponentProps = {
@@ -12,7 +12,7 @@ type SquareComponentProps = {
   onEdit: () => void;
 }
 
-const ExerciseSquare = ({ name, weight, reps, onDelete, onEdit }: SquareComponentProps) => {
+const ExerciseBox = ({ name, weight, reps, onDelete, onEdit }: SquareComponentProps) => {
   const [dropdownValue, setDropdownValue] = useState('Option 1');
   const [menuVisible, setMenuVisible] = useState(false);
   const [exerciseName, setExerciseName] = useState(name || '');
@@ -223,4 +223,4 @@ const styles = StyleSheet.create({
   
 });
 
-export default ExerciseSquare;
+export default ExerciseBox;

@@ -1,12 +1,11 @@
-import { Dimensions, GestureResponderEvent, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { TextInput, Button } from "react-native-paper";
-import PillList  from "../components/PillList";
-import Constants from "../constants";
-import ExerciseSquare from "../components/exerciseSquare";
-import rawData from "../data.json";
-import {useEffect, useRef, useState } from "react";
-import {Dialog, IconButton, PaperProvider } from "react-native-paper";
+import { useState } from "react";
+import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Button, Dialog, IconButton, PaperProvider, TextInput } from "react-native-paper";
+import ExerciseBox from "../components/exerciseBox";
+import PillList from "../components/PillList";
+import Constants from "../constants";
+import rawData from "../data.json";
 
 
 // Clean up data to remove undefined exercises
@@ -172,13 +171,14 @@ function nextPlanId() {
         scrollEventThrottle={16}
       >
          <GestureHandlerRootView style={{ flex: 1, width: '100%' }}>
-           <View style={{ width: screenWidth}}>
+             <View style={{ width: screenWidth, paddingHorizontal: screenWidth > 1200 ? 300 :20 }}>
         {getExercisesByPlan(selectedPlan).map((exercise, idx) => (
-         <ExerciseSquare 
+         <ExerciseBox 
           key={`${exercise.id}`} 
           name={exercise.name} 
           onDelete={() => handleDeleteExercise(exercise.id)}
           onEdit={() => handleEditExercise(exercise.id)} />
+          
         ))}
          </View>
         </GestureHandlerRootView>
