@@ -1,0 +1,180 @@
+[
+  {
+    "id": "plan1",
+    "name": "Push",
+    "exercises": {
+      "exercise1": {
+        "id": "ex1",
+        "name": "Bench Press",
+        "weight": 60,
+        "reps": 10
+      },
+      "exercise2": {
+        "id": "ex2",
+        "name": "Incline Bench Press",
+        "weight": 50,
+        "reps": 10
+      },
+      "exercise3": {
+        "id": "ex3",
+        "name": "Flys",
+        "weight": 47,
+        "reps": 12
+      },
+      "exercise4": {
+        "id": "ex4",
+        "name": "Shoulder Press",
+        "weight": 35,
+        "reps": 8
+      },
+      "exercise5": {
+        "id": "ex5",
+        "name": "Lateral Raises",
+        "weight": 20,
+        "reps": 12
+      },
+      "exercise6": {
+        "id": "ex6",
+        "name": "Tricep Dips",
+        "weight": 20,
+        "reps": 12
+      }
+    }
+  },
+  {
+    "id": "plan2",
+    "name": "Pull",
+    "exercises": {
+      "exercise1": {
+        "id": "ex7",
+        "name": "Lat Pulldown",
+        "weight": 60,
+        "reps": 12
+      },
+      "exercise2": {
+        "id": "ex8",
+        "name": "Seated Row",
+        "weight": 70,
+        "reps": 10
+      },
+      "exercise3": {
+        "id": "ex9",
+        "name": "Bent Over Row",
+        "weight": 60,
+        "reps": 10
+      },
+      "exercise4": {
+        "id": "ex10",
+        "name": "Face Pulls",
+        "weight": 30,
+        "reps": 12
+      },
+      "exercise5": {
+        "id": "ex11",
+        "name": "Bicep Curls",
+        "weight": 60,
+        "reps": 12
+      },
+      "exercise6": {
+        "id": "ex12",
+        "name": "Hammer Curls",
+        "weight": 20,
+        "reps": 12
+      }
+    }
+  },
+  {
+    "id": "plan3",
+    "name": "Legs",
+    "exercises": {
+      "exercise1": {
+        "id": "ex13",
+        "name": "Leg Press",
+        "weight": 180,
+        "reps": 10
+      },
+      "exercise2": {
+        "id": "ex14",
+        "name": "Leg Curl",
+        "weight": 150,
+        "reps": 10
+      },
+      "exercise3": {
+        "id": "ex15",
+        "name": "Leg Extension",
+        "weight": 100,
+        "reps": 12
+      },
+      "exercise4": {
+        "id": "ex16",
+        "name": "Calf Raises",
+        "weight": 110,
+        "reps": 12
+      }
+    }
+  },
+  {
+    "id": "plan4",
+    "name": "Full Body",
+    "exercises": {
+      "exercise1": {
+        "id": "ex17",
+        "name": "Burpee"
+      }
+    }
+  },
+  {
+    "id": "plan5",
+    "name": "Upper Body",
+    "exercises": {
+      "exercise1": {
+        "id": "ex18",
+        "name": "Shoulder Press",
+        "weight": 50,
+        "reps": 12
+      }
+    }
+  },
+  {
+    "id": "plan6",
+    "name": "Lower Body",
+    "exercises": {
+      "exercise1": {
+        "id": "ex19",
+        "name": "Deadlift",
+        "weight": 120,
+        "reps": 5
+      }
+    }
+  },
+  {
+    "id": "plan7",
+    "name": "Cardio",
+    "exercises": {
+      "exercise1": {
+        "id": "ex20",
+        "name": "Running"
+      }
+    }
+  },
+  {
+    "id": "plan8",
+    "name": "Flexibility",
+    "exercises": {
+      "exercise1": {
+        "id": "ex21",
+        "name": "Yoga Stretch"
+      }
+    }
+  },
+  {
+    "id": "plan9",
+    "name": "+",
+    "exercises": {
+      "exercise1": {
+        "id": "ex22",
+        "name": "Custom Exercise"
+      }
+    }
+  }
+]
