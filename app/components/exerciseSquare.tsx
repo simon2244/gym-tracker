@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Text, TextInput, Button, Menu, Divider } from 'react-native-paper';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Constants from '../constants';
 
 type SquareComponentProps = {
   name: string;
@@ -77,8 +78,8 @@ const ExerciseSquare = ({ name, weight, reps, onDelete, onEdit }: SquareComponen
 
 
   return (
-    <View style={{ width: '100%' }}>
-    {/* <Swipeable
+    <View >
+    <Swipeable
     renderRightActions={LeftSwipeAction}
     leftThreshold={Infinity}
     onSwipeableOpen={(direction: string) => {
@@ -87,26 +88,41 @@ const ExerciseSquare = ({ name, weight, reps, onDelete, onEdit }: SquareComponen
       } else if (direction === "left") {
         // Swiped from left
       }
-    }}> */}
+    }}>
     <View style={[styles.square, { flexDirection: 'column', alignItems: 'flex-start' }]}>
       <View>
         {isEditing ? (
           <TextInput
-            style={styles.input}
+            style={[styles.input, { alignSelf: 'flex-start' }]}
             value={exerciseName}
-            onChangeText={setExerciseName}
-            onBlur={() => setIsEditing(false)}
+            onChangeText={text => setExerciseName(text)}
+            onBlur={() => {
+              if (!exerciseName.trim()) {
+                setExerciseName(name);
+              }
+              setIsEditing(false);
+            }}
             autoFocus
             selectTextOnFocus={true}
+            textColor="#fff"
+            mode='flat'
+            activeUnderlineColor={Constants.primaryBlue}
           />
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)}>
-            <Text style={styles.label}>{exerciseName}</Text>
+            <Text style={[styles.label, { alignSelf: 'flex-start' }]}>{exerciseName}</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+    }}
+  >
         <TextInput
           mode="outlined"
           label="Weight (kg)"
@@ -115,8 +131,16 @@ const ExerciseSquare = ({ name, weight, reps, onDelete, onEdit }: SquareComponen
             const numeric = text.replace(/[^0-9]/g, '');
             setSelectedWeight(Number(numeric));
           }}
+         
           keyboardType="numeric"
           style={styles.input}
+          textColor="#fff"
+          activeOutlineColor= {Constants.primaryBlue}
+          theme={{
+            colors: {
+              onSurfaceVariant: '#888888', 
+            },
+          }}
         />
         <Text style={{ fontSize: 24, color: '#fff', marginHorizontal: 4 }}>×</Text>
         <TextInput
@@ -129,10 +153,17 @@ const ExerciseSquare = ({ name, weight, reps, onDelete, onEdit }: SquareComponen
           }}
           keyboardType="numeric"
           style={styles.input}
+          textColor="#fff"
+          activeOutlineColor= {Constants.primaryBlue}
+          theme={{
+            colors: {
+              onSurfaceVariant: '#888888', 
+            },
+          }}
         />
       </View>
     </View>
-    {/* </Swipeable> */}
+    </Swipeable>
     </View>
  
  
@@ -144,7 +175,7 @@ const styles = StyleSheet.create({
  square: {
   flexDirection: 'column',
   alignItems: 'flex-start',
-  backgroundColor: '#25292e',
+  backgroundColor: '#2d3239',
   borderRadius: 12,
   padding: 16,
   marginVertical: 8,   
@@ -163,9 +194,12 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#333',
-    color: '#fff',
     flex: 1,
     marginHorizontal: 8,
+    borderRadius: 8,
+    
+    
+   
   },
   dropdown: {
     borderColor: '#555',

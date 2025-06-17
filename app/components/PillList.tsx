@@ -5,10 +5,11 @@ type PillListProps = {
     items: string[];
     selectedIndex?: number;
     onSelect?: (selectedItem: string) => void;
+    addPlan?: () => void;
 }
 
 
-export default function PillGroup({ items, selectedIndex, onSelect }: PillListProps){
+export default function PillGroup({ items, selectedIndex, onSelect, addPlan }: PillListProps){
 
   const [selected, setSelected] = useState(items[selectedIndex || 0]);
 
@@ -20,7 +21,7 @@ export default function PillGroup({ items, selectedIndex, onSelect }: PillListPr
             key={item}
              onPress={() => {
               setSelected(item);
-              onSelect?.(item); // Optionaler Callback
+              onSelect?.(item); 
             }}
             style={[
               styles.pill,
@@ -37,6 +38,13 @@ export default function PillGroup({ items, selectedIndex, onSelect }: PillListPr
             </Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity 
+        onPress={addPlan}
+        style={[
+             styles.pill
+            ]}>
+          <Text style={styles.pillText}>+</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );

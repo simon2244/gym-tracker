@@ -166,15 +166,6 @@
         "name": "Yoga Stretch"
       }
     }
-  },
-  {
-    "id": "plan9",
-    "name": "+",
-    "exercises": {
-      "exercise1": {
-        "id": "ex22",
-        "name": "Custom Exercise"
-      }
-    }
   }
+  
 ]

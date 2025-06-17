@@ -1,10 +1,11 @@
-import { Button, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Dimensions, GestureResponderEvent, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { TextInput, Button } from "react-native-paper";
 import PillList  from "../components/PillList";
 import Constants from "../constants";
 import ExerciseSquare from "../components/exerciseSquare";
 import rawData from "../data.json";
 import {useEffect, useRef, useState } from "react";
-import {IconButton, PaperProvider } from "react-native-paper";
+import {Dialog, IconButton, PaperProvider } from "react-native-paper";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
@@ -36,7 +37,10 @@ type Plan = {
 export default function Index() {
   const [plans, setPlans] = useState<Plan[]>(data);
   const [selectedPlan, setSelectedPlan] = useState(plans[0].name);
-  const workoutPlans = data.map(plan=> plan.name);
+  const workoutPlans = plans.map(plan => plan.name);
+  const [showAddPlanDialog, setShowAddPlanDialog] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
+  const screenWidth = Dimensions.get('window').width;
 
    
 function nextPlanId() {
@@ -79,7 +83,7 @@ function nextPlanId() {
   return Object.values(plan.exercises);
 }
 
-  function handleAddButtonPress(){
+  function handleAddExerciseButtonPress(){
     let id = nextExerciseId();
     addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise", "weight": 0, "reps": 0});
   }
@@ -125,28 +129,50 @@ function nextPlanId() {
     throw new Error("Function not implemented.");
   }
 
+  function handleAddPlan(): void {
+    setShowAddPlanDialog(true);
+  }
+
+  function addPlan(name: string): void {
+    if (!name.trim()) {
+      return; 
+    }
+
+    const newPlan: Plan = {
+      id: `plan${nextPlanId()}`,
+      name: name,
+      exercises: {},
+    };
+
+    setPlans(prevPlans => [...prevPlans, newPlan]);
+    setShowAddPlanDialog(false);
+    setNewPlanName('');
+  }
+
   return (
     <PaperProvider>
-       <GestureHandlerRootView style={styles.container}>
+      
      
     <View style={styles.container}>
       <View style={[styles.topBar]} >
         <PillList
           items={workoutPlans}
           selectedIndex={workoutPlans.indexOf(selectedPlan)}
-          onSelect={(planName) => setSelectedPlan(planName)} />
+          onSelect={(planName) => setSelectedPlan(planName)} 
+          addPlan={handleAddPlan}
+          />
       </View>
       <ScrollView
         contentContainerStyle={{ 
           width: '100%',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingTop: 70,
-          paddingHorizontal: 16,
         }}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
       >
+         <GestureHandlerRootView style={{ flex: 1, width: '100%' }}>
+           <View style={{ width: screenWidth}}>
         {getExercisesByPlan(selectedPlan).map((exercise, idx) => (
          <ExerciseSquare 
           key={`${exercise.id}`} 
@@ -154,24 +180,67 @@ function nextPlanId() {
           onDelete={() => handleDeleteExercise(exercise.id)}
           onEdit={() => handleEditExercise(exercise.id)} />
         ))}
+         </View>
+        </GestureHandlerRootView>
         <View style={{margin: 20}}>   
           <IconButton
           icon="plus"
           size={24}
           iconColor="white"
           style={styles.iconButton}
-          onPress={handleAddButtonPress}
+          onPress={handleAddExerciseButtonPress}
         />
         </View>
       </ScrollView>
+      <Dialog style={{ width: '70%', height: '30%', borderRadius: 20, alignSelf: 'center', backgroundColor: Constants.backgroundDark }} visible={showAddPlanDialog} onDismiss={() => setShowAddPlanDialog(false)}>
+      <Dialog.Title style={{ color: '#fff' }}>Add New Plan</Dialog.Title>
+      <Dialog.Content>
+        <TextInput
+          mode="outlined"
+          label="Name"
+          onChangeText={(text) => setNewPlanName(text)}
+          style={styles.input}
+          textColor={styles.text.color} 
+        />
+      </Dialog.Content>
+      <Dialog.Actions>
+        <View style={{ borderRadius: 50, flexDirection: 'row'}}>
+          
+          <Button 
+            mode="text"
+            onPress={() => {
+              setShowAddPlanDialog(false);
+              setNewPlanName('');
+            }}
+            labelStyle={styles.buttonLabelStyle}
+          >
+          Cancel
+          </Button>
+          <Button 
+            mode="text"
+            onPress={() => addPlan(newPlanName)} 
+            labelStyle={[
+              styles.buttonLabelStyle,
+              !newPlanName.trim() && { color: '#888' }
+            ]}
+            disabled={!newPlanName.trim()}
+          >
+          Add
+          </Button>
+        </View>
+
+      </Dialog.Actions>
+    </Dialog>
     </View>
-    </GestureHandlerRootView>
+    
+    {/* </GestureHandlerRootView> */}
     </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
     flex: 1,
     backgroundColor: Constants.backgroundDark,
     alignItems: 'center',
@@ -180,20 +249,19 @@ const styles = StyleSheet.create({
   text: {
     color: '#fff',
   },
-  button: {
-    fontSize: 20,
-    textDecorationLine: 'underline',
-    color: '#222',
+  buttonLabelStyle: {
+    color: Constants.primaryBlue,
+    fontSize: 16,
   },
   topBar: {
-    position: 'absolute',
+    position: 'relative',
     top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
-    padding: 16,
+    padding: 0,
     paddingTop: 4,
     backgroundColor: Constants.backgroundDark, 
     zIndex: 10, 
@@ -201,5 +269,14 @@ const styles = StyleSheet.create({
   iconButton: {
     backgroundColor: Constants.primaryBlue, 
     borderRadius: 30,
+  },
+  input: {
+    backgroundColor: '#333',
+    color: 'white',
+    flex: 1,
+    marginHorizontal: 8,
+    borderRadius: 8,
+    outlineColor: Constants.primaryBlue,
+   
   },
 });
