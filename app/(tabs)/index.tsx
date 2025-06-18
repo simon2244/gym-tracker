@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Button, Dialog, IconButton, PaperProvider, TextInput } from "react-native-paper";
+import { Button, Dialog, Icon, IconButton, PaperProvider, TextInput } from "react-native-paper";
 import ExerciseBox from "../components/exerciseBox";
 import PillList from "../components/PillList";
 import Constants from "../constants";
 import rawData from "../data.json";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 // Clean up data to remove undefined exercises
@@ -18,13 +19,13 @@ const data = rawData.map(plan => ({
 }));
 
 
-type Exercise = {
+export type Exercise = {
    id: string;
   name: string;
-  weight: number;
-  reps: number;
+  weight: string;
+  reps: string;
 };
-type Plan = {
+export type Plan = {
   id: string;
   name: string;
   exercises: {
@@ -34,28 +35,80 @@ type Plan = {
 
 
 export default function Index() {
-  const [plans, setPlans] = useState<Plan[]>(data);
-  const [selectedPlan, setSelectedPlan] = useState(plans[0].name);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(plans[0]?.name || '');
   const workoutPlans = plans.map(plan => plan.name);
   const [showAddPlanDialog, setShowAddPlanDialog] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const screenWidth = Dimensions.get('window').width;
 
    
-function nextPlanId() {
-    let maxId = 0;
+  // Load plans from storage when component mounts
+ useEffect(() => {
+  const loadPlans = async () => {
+    try {
+      // clearAllStorage(); 
+      const storedPlans = await AsyncStorage.getItem('gymPlans');
+      if (storedPlans !== null) {
+        // ✅ Daten aus Storage laden
+        const parsedPlans = JSON.parse(storedPlans);
+        setPlans(parsedPlans);
+        setSelectedPlan(parsedPlans[0]?.name || '');
+      } else {
+        // ✅ KEINE gespeicherten Pläne → Beispiel-Daten verwenden
+        setPlans(data); 
+        setSelectedPlan(data[0]?.name || '');
 
-    plans.forEach(plan => {
-      const planIdNum = parseInt(plan.id.replace("plan", ""), 10);
-      if( !isNaN(planIdNum) && planIdNum > maxId){
-        maxId = planIdNum;
+        // ❗️Und direkt speichern, damit sie beim nächsten Start da sind
+        await AsyncStorage.setItem('gymPlans', JSON.stringify(data));
       }
-    });
+    } catch (error) {
+      console.error('Failed to load plans:', error);
+      // Optional: setPlans(data); // Falls du auch bei Fehler fallback willst
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return maxId + 1;
-}
+  loadPlans();
+}, []);
+  
+  // Save plans to storage whenever they change
+  useEffect(() => {
+   
+    // Don't save on initial load
+    if (!isLoading) {
+      savePlans();
+    }
+  }, [plans, isLoading]);
 
+   const savePlans = async () => {
+      try {
+        await AsyncStorage.setItem('gymPlans', JSON.stringify(plans));
+        // console.log('Plans saved successfully: '+ JSON.stringify(plans));
+      } catch (error) {
+        console.error('Failed to save plans:', error);
+      }
+    };
 
+ 
+
+  // Function to get the next plan ID based on existing plans  
+  function nextPlanId() {
+      let maxId = 0;
+
+      plans.forEach(plan => {
+        const planIdNum = parseInt(plan.id.replace("plan", ""), 10);
+        if( !isNaN(planIdNum) && planIdNum > maxId){
+          maxId = planIdNum;
+        }
+      });
+
+      return maxId + 1;
+  }
+
+  // Function to get the next exercise ID based on existing exercises in all plans
   function nextExerciseId() {
     let maxId = 0;
 
@@ -67,24 +120,23 @@ function nextPlanId() {
         }
       });
     });
-
-  return maxId +1;
-}
-  
-  
-  function getExercisesByPlan(planName: string) {
-  const plan = plans.find(p => p.name === planName);
-
-  if (!plan || typeof plan.exercises !== 'object' || plan.exercises === null) {
-    return [];
+    return maxId +1;
   }
+  
+  // Function to get exercises by plan name  
+  function getExercisesByPlan(planName: string) {
+    const plan = plans.find(p => p.name === planName);
 
-  return Object.values(plan.exercises);
-}
+    if (!plan || typeof plan.exercises !== 'object' || plan.exercises === null) {
+      return [];
+    }
+
+    return Object.values(plan.exercises);
+  }
 
   function handleAddExerciseButtonPress(){
     let id = nextExerciseId();
-    addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise", "weight": 0, "reps": 0});
+    addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise", "weight": '0', "reps": '0'});
   }
 
   function addExerciseToPlan (planName: string, newExercise: Exercise){
@@ -103,6 +155,7 @@ function nextPlanId() {
         return plan;
       })
     );
+    
   }
 
 
@@ -123,8 +176,11 @@ function nextPlanId() {
     );
   }
 
+  function handleSave(): void {
+    savePlans();
+  }
 
-    function handleEditExercise(id: string): void {
+  function handleEditExercise(id: string): void {
     throw new Error("Function not implemented.");
   }
 
@@ -175,22 +231,40 @@ function nextPlanId() {
         {getExercisesByPlan(selectedPlan).map((exercise, idx) => (
          <ExerciseBox 
           key={`${exercise.id}`} 
+          exercise_id={`${exercise.id}`}
+          plan_id={`${plans.find(plan => plan.name === selectedPlan)?.id}`}
           name={exercise.name} 
+          weight={exercise.weight}
+          reps={exercise.reps}
           onDelete={() => handleDeleteExercise(exercise.id)}
           onEdit={() => handleEditExercise(exercise.id)} />
           
         ))}
          </View>
         </GestureHandlerRootView>
-        <View style={{margin: 20}}>   
-          <IconButton
-          icon="plus"
-          size={24}
-          iconColor="white"
-          style={styles.iconButton}
-          onPress={handleAddExerciseButtonPress}
-        />
+        <View style={{flexDirection: 'row'}}>
+          <View style={{ justifyContent: 'flex-start' }}>   
+            <IconButton
+            icon="plus"
+            size={24}
+            iconColor="white"
+            style={styles.iconButton}
+            onPress={handleAddExerciseButtonPress}
+            disabled={selectedPlan === ''}
+          />
+          </View>
+          <View style={{ justifyContent: 'flex-end'}}>
+            <IconButton
+              icon="content-save"
+              size={24}
+              iconColor="white"
+              style={styles.iconButton}
+              onPress={handleSave}
+            />
+          </View>
         </View>
+
+        
       </ScrollView>
       <Dialog style={{ width: '70%', height: '30%', borderRadius: 20, alignSelf: 'center', backgroundColor: Constants.backgroundDark }} visible={showAddPlanDialog} onDismiss={() => setShowAddPlanDialog(false)}>
       <Dialog.Title style={{ color: '#fff' }}>Add New Plan</Dialog.Title>

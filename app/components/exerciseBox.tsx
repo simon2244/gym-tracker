@@ -1,24 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Text, TextInput } from 'react-native-paper';
 import Constants from '../constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Exercise, Plan } from '../(tabs)';
 
-type SquareComponentProps = {
+type ExerciseBoxProps = {
+  exercise_id: string;
+  plan_id: string;
   name: string;
-  weight?: number;
-  reps?: number;
+  weight?: string;
+  reps?: string;
   onDelete: () => void;
   onEdit: () => void;
 }
 
-const ExerciseBox = ({ name, weight, reps, onDelete, onEdit }: SquareComponentProps) => {
-  const [dropdownValue, setDropdownValue] = useState('Option 1');
-  const [menuVisible, setMenuVisible] = useState(false);
+const ExerciseBox = ({ exercise_id, plan_id, name, weight, reps, onDelete, onEdit }: ExerciseBoxProps) => {
   const [exerciseName, setExerciseName] = useState(name || '');
-  const [selectedWeight, setSelectedWeight] = useState(weight || 0);
-  const [selectedReps, setSelectedReps] = useState(reps || 0);
+  const [selectedWeight, setSelectedWeight] = useState(weight || '0');
+  const [selectedReps, setSelectedReps] = useState(reps || '0');
+
+  const exerciseNameRef = useRef<String>(exerciseName);
+  const weightRef = useRef<String>(selectedWeight);
+  const repsRef = useRef<String>(selectedReps);
+  const [loading, setLoading] = useState(true);
+
+  
   const [isEditing, setIsEditing] = useState(false);
+
+   
+  // if (loading) return <Text style={{color: '#fff'}}>Wird geladen...</Text>;
+  // if (!exercise) return <Text style={{color: '#fff'}}>Übung nicht gefunden</Text>;
   
   const LeftSwipeAction = () => {
   return (
@@ -76,6 +89,42 @@ const ExerciseBox = ({ name, weight, reps, onDelete, onEdit }: SquareComponentPr
   );
 };
 
+//TODO mach ein debounce für die Updates, damit nicht bei jedem Zeichenwechsel gespeichert wird
+  async function updateExerciseData() {
+    try {
+    const storedData = await AsyncStorage.getItem('gymPlans');
+    if (!storedData) return;
+
+    let storedPlans = JSON.parse(storedData);
+    const planIndex = storedPlans.findIndex((plan: Plan) => plan.id === plan_id);
+    if (planIndex === -1) return;
+
+    const plan = storedPlans[planIndex];
+
+    // ✅ Exercise im Objekt aktualisieren
+    const exerciseKey = Object.keys(plan.exercises).find(
+      (key) => plan.exercises[key].id === exercise_id
+    );
+
+    if (!exerciseKey) return;
+
+    plan.exercises[exerciseKey] = {
+      ...plan.exercises[exerciseKey],
+      name: exerciseName,
+      weight: selectedWeight,
+      reps: selectedReps,
+    };
+
+    // ✅ Plan im Array ersetzen
+    storedPlans[planIndex] = plan;
+
+    // ✅ Speichern
+    await AsyncStorage.setItem('gymPlans', JSON.stringify(storedPlans));
+    console.log('Exercise updated successfully');
+  } catch (error) {
+    console.error('Failed to update exercise:', error);
+  }
+  }
 
   return (
     <View >
@@ -99,6 +148,8 @@ const ExerciseBox = ({ name, weight, reps, onDelete, onEdit }: SquareComponentPr
             onBlur={() => {
               if (!exerciseName.trim()) {
                 setExerciseName(name);
+                exerciseNameRef.current = name;
+                updateExerciseData();
               }
               setIsEditing(false);
             }}
@@ -129,8 +180,10 @@ const ExerciseBox = ({ name, weight, reps, onDelete, onEdit }: SquareComponentPr
           value={selectedWeight ? String(selectedWeight) : ''}
           onChangeText={text => {
             const numeric = text.replace(/[^0-9]/g, '');
-            setSelectedWeight(Number(numeric));
+            setSelectedWeight(numeric);
+            weightRef.current = numeric;
           }}
+          onBlur={updateExerciseData}
          
           keyboardType="numeric"
           style={styles.input}
@@ -149,8 +202,10 @@ const ExerciseBox = ({ name, weight, reps, onDelete, onEdit }: SquareComponentPr
           value={selectedReps ? String(selectedReps) : ''}
           onChangeText={text => {
             const numeric = text.replace(/[^0-9]/g, '');
-            setSelectedReps(Number(numeric));
+            setSelectedReps(numeric);
+            repsRef.current = numeric;
           }}
+          onBlur={updateExerciseData}
           keyboardType="numeric"
           style={styles.input}
           textColor="#fff"
