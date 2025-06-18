@@ -242,7 +242,7 @@ export default function Index() {
         ))}
          </View>
         </GestureHandlerRootView>
-        <View style={{flexDirection: 'row'}}>
+       
           <View style={{ justifyContent: 'flex-start' }}>   
             <IconButton
             icon="plus"
@@ -252,16 +252,8 @@ export default function Index() {
             onPress={handleAddExerciseButtonPress}
             disabled={selectedPlan === ''}
           />
-          </View>
-          <View style={{ justifyContent: 'flex-end'}}>
-            <IconButton
-              icon="content-save"
-              size={24}
-              iconColor="white"
-              style={styles.iconButton}
-              onPress={handleSave}
-            />
-          </View>
+         
+          
         </View>
 
         
