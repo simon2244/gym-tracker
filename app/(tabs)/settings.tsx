@@ -25,7 +25,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.container}>
        
         {/* Allgemein */}
-        <List.Section>
+        <List.Section >
           <List.Subheader style={styles.subheader}>Allgemein</List.Subheader>
           <List.Item title="Benachrichtigungen" left={() => <List.Icon icon="bell" />} />
           <List.Item title="Sprache" left={() => <List.Icon icon="translate" />} />
@@ -35,7 +35,7 @@ export default function SettingsScreen() {
         {/* Daten */}
         <List.Section>
           <List.Subheader style={styles.subheader}>Daten</List.Subheader>
-          <List.Item title="Speicherort anzeigen" left={() => <List.Icon icon="database" />} />
+          <List.Item  title="Speicherort anzeigen" left={() => <List.Icon icon="database" />} />
           <List.Item title="Backup erstellen" left={() => <List.Icon icon="backup-restore" />} />
         </List.Section>
         <Divider />

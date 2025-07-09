@@ -30,6 +30,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} color={color} size={24}/>
+          ),
+        }}
+      />
+       <Tabs.Screen
+        name="clock"
+        options={{
+          title: 'Interval Timer',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'alarm' : 'alarm-outline'} color={color} size={24}/>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',

@@ -5,27 +5,145 @@
     "exercises": {
       "exercise1": {
         "id": "ex1",
-        "name": "Bench Press",
+        "name": "Bankdrücken",
+        "sets": 3,
         "weight": 60,
-        "reps": 10
+        "reps": 12
+      },
+      "exercise2": {
+        "id": "ex2",
+        "name": "Schrägbankdrücken",
+        "sets": 3,
+        "weight": 28,
+        "reps": 12
+      },
+      "exercise3": {
+        "id": "ex3",
+        "name": "Shoulderpresses",
+        "sets": 3,
+        "weight": 34.5,
+        "reps": 12
+      },
+      "exercise4": {
+        "id": "ex4",
+        "name": "Flys",
+        "sets": 3,
+        "weight": 47,
+        "reps": 12
+      },
+      "exercise5": {
+        "id": "ex5",
+        "name": "Seitheben am Seilzug",
+        "sets": 3,
+        "weight": 4.5,
+        "reps": 12
+      },
+      "exercise6": {
+        "id": "ex6",
+        "name": "Trizeps Extensions",
+        "sets": 3,
+        "weight": 22,
+        "reps": 12
       }
-      
     }
   },
   {
     "id": "plan2",
     "name": "Pull",
     "exercises": {
+      "exercise1": {
+        "id": "ex1",
+        "name": "Rudern normal",
+        "sets": 3,
+        "weight": 28.5,
+        "reps": 12
+      },
+        "exercise2": {
+        "id": "ex2",
+        "name": "Latzug",
+        "sets": 3,
+        "weight": 61,
+        "reps": 12
+      },
+      "exercise3": {
+        "id": "ex3",
+        "name": "Stehen Rudern",
+        "sets": 3,
+        "weight": 35,
+        "reps": 12
+      },
+     
+      "exercise4": {
+        "id": "ex4",
+        "name": "Rudern von oben",
+        "sets": 3,
+        "weight": 35,
+        "reps": 12
+      },
       
+      "exercise5": {
+        "id": "ex5",
+        "name": "Reverse Flys",
+        "sets": 3,
+        "weight": 42.5,
+        "reps": 12
+      },
+      "exercise6": {
+        "id": "ex6",
+        "name": "Bizeps Maschine",
+        "sets": 3,
+        "weight": 39,
+        "reps": 12
+      },
+      "exercise7": {
+        "id": "ex7",
+        "name": "Bizeps am Seilzug",
+        "sets": 3,
+        "weight": 0,
+        "reps": 12
+      }
+     
     }
   },
   {
     "id": "plan3",
     "name": "Legs",
     "exercises": {
-      
+      "exercise1": {
+        "id": "ex1",
+        "name": "Beinpresse",
+        "sets": 3,
+        "weight": 150,
+        "reps": 12
+      },
+      "exercise2": {
+        "id": "ex2",
+        "name": "Beinstrecker",
+        "sets": 3,
+        "weight": 57,
+        "reps": 12
+      },
+      "exercise3": {
+        "id": "ex3",
+        "name": "Beinbeuger",
+        "sets": 3,
+        "weight": 40,
+        "reps": 12
+      },
+      "exercise4": {
+        "id": "ex4",
+        "name": "Waden Raises",
+        "sets": 3,
+        "weight": 100,
+        "reps": 12
+      },
+      "exercise5": {
+        "id": "ex5",
+        "name": "Hip Thrust",
+        "sets": 3,
+        "weight": 30,
+        "reps": 12
+      }
     }
   }
- 
-  
 ]

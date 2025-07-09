@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Button, Dialog, Icon, IconButton, PaperProvider, TextInput } from "react-native-paper";
@@ -22,6 +22,7 @@ const data = rawData.map(plan => ({
 export type Exercise = {
    id: string;
   name: string;
+  sets: string;
   weight: string;
   reps: string;
 };
@@ -36,12 +37,18 @@ export type Plan = {
 
 export default function Index() {
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(plans[0]?.name || '');
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
   const workoutPlans = plans.map(plan => plan.name);
+  const plansMap: Record<string, string> = plans.reduce((acc, plan) => {
+  acc[plan.id] = plan.name;
+  return acc;
+}, {} as Record<string, string>); 
+
   const [showAddPlanDialog, setShowAddPlanDialog] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const screenWidth = Dimensions.get('window').width;
+
 
    
   // Load plans from storage when component mounts
@@ -54,11 +61,10 @@ export default function Index() {
         // ✅ Daten aus Storage laden
         const parsedPlans = JSON.parse(storedPlans);
         setPlans(parsedPlans);
-        setSelectedPlan(parsedPlans[0]?.name || '');
       } else {
         // ✅ KEINE gespeicherten Pläne → Beispiel-Daten verwenden
         setPlans(data); 
-        setSelectedPlan(data[0]?.name || '');
+
 
         // ❗️Und direkt speichern, damit sie beim nächsten Start da sind
         await AsyncStorage.setItem('gymPlans', JSON.stringify(data));
@@ -70,7 +76,6 @@ export default function Index() {
       setIsLoading(false);
     }
   };
-
   loadPlans();
 }, []);
   
@@ -83,7 +88,11 @@ export default function Index() {
     }
   }, [plans, isLoading]);
 
-   const savePlans = async () => {
+   
+
+
+ 
+const savePlans = async () => {
       try {
         await AsyncStorage.setItem('gymPlans', JSON.stringify(plans));
         // console.log('Plans saved successfully: '+ JSON.stringify(plans));
@@ -91,9 +100,7 @@ export default function Index() {
         console.error('Failed to save plans:', error);
       }
     };
-
- 
-
+    
   // Function to get the next plan ID based on existing plans  
   function nextPlanId() {
       let maxId = 0;
@@ -133,17 +140,28 @@ export default function Index() {
 
     return Object.values(plan.exercises);
   }
+  function getExercisesByPlanId(planId: string) {
+  const plan = plans.find(p => p.id === planId);
+
+  if (!plan || typeof plan.exercises !== 'object' || plan.exercises === null) {
+    return [];
+  }
+
+  return Object.values(plan.exercises);
+}
 
   function handleAddExerciseButtonPress(){
     let id = nextExerciseId();
-    addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise", "weight": '0', "reps": '0'});
+    if (typeof selectedPlan === 'string' && selectedPlan.trim() !== '') {
+      addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise","sets": '0', "weight": '0', "reps": '0'});
+    }
   }
 
-  function addExerciseToPlan (planName: string, newExercise: Exercise){
+  function addExerciseToPlan (planId: string, newExercise: Exercise){
    
     setPlans(prevPlans =>
       prevPlans.map(plan => {
-        if (plan.name === planName) {
+        if (plan.id === planId) {
           return {
             ...plan,
             exercises: {
@@ -157,13 +175,11 @@ export default function Index() {
     );
     
   }
-
-
   
   function handleDeleteExercise(id: string): void {
     setPlans(prevPlans =>
       prevPlans.map(plan => {
-        if (plan.name === selectedPlan) {
+        if (plan.id === selectedPlan) {
           return {
         ...plan,
         exercises: Object.fromEntries(
@@ -211,10 +227,11 @@ export default function Index() {
     <View style={styles.container}>
       <View style={[styles.topBar]} >
         <PillList
-          items={workoutPlans}
-          selectedIndex={workoutPlans.indexOf(selectedPlan)}
-          onSelect={(planName) => setSelectedPlan(planName)} 
+          items={plansMap}
+          selectedIndex={plans.findIndex(plan => plan.id === selectedPlan)}
+          onSelect={(planId) => setSelectedPlan(planId)}
           addPlan={handleAddPlan}
+          deletePlan={(planId) => setPlans(plans.filter(plan => plan.id !== planId))}
           />
       </View>
       <ScrollView
@@ -228,12 +245,13 @@ export default function Index() {
       >
          <GestureHandlerRootView style={{ flex: 1, width: '100%' }}>
              <View style={{ width: screenWidth, paddingHorizontal: screenWidth > 1200 ? 300 :20 }}>
-        {getExercisesByPlan(selectedPlan).map((exercise, idx) => (
+        {getExercisesByPlanId(selectedPlan).map((exercise, idx) => (
          <ExerciseBox 
-          key={`${exercise.id}`} 
+          key={`${selectedPlan}-${exercise.id}`} 
           exercise_id={`${exercise.id}`}
-          plan_id={`${plans.find(plan => plan.name === selectedPlan)?.id}`}
+          plan_id={`${plans.find(plan => plan.id === selectedPlan)?.id}`}
           name={exercise.name} 
+          sets={exercise.sets}
           weight={exercise.weight}
           reps={exercise.reps}
           onDelete={() => handleDeleteExercise(exercise.id)}

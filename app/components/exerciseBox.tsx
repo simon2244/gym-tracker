@@ -5,29 +5,34 @@ import { Text, TextInput } from 'react-native-paper';
 import Constants from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Exercise, Plan } from '../(tabs)';
+import { TextInput as RNTextInput } from 'react-native';
 
 type ExerciseBoxProps = {
   exercise_id: string;
   plan_id: string;
   name: string;
+  sets: string;
   weight?: string;
   reps?: string;
   onDelete: () => void;
   onEdit: () => void;
 }
 
-const ExerciseBox = ({ exercise_id, plan_id, name, weight, reps, onDelete, onEdit }: ExerciseBoxProps) => {
+const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete, onEdit }: ExerciseBoxProps) => {
   const [exerciseName, setExerciseName] = useState(name || '');
   const [selectedWeight, setSelectedWeight] = useState(weight || '0');
   const [selectedReps, setSelectedReps] = useState(reps || '0');
+  const [selectedSets, setSelectedSets] = useState(sets || '0');
 
   const exerciseNameRef = useRef<String>(exerciseName);
   const weightRef = useRef<String>(selectedWeight);
   const repsRef = useRef<String>(selectedReps);
+  const setsRef = useRef<String>(selectedSets);
   const [loading, setLoading] = useState(true);
 
   
   const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<RNTextInput>(null);
 
    
   // if (loading) return <Text style={{color: '#fff'}}>Wird geladen...</Text>;
@@ -141,8 +146,10 @@ const ExerciseBox = ({ exercise_id, plan_id, name, weight, reps, onDelete, onEdi
     <View style={[styles.square, { flexDirection: 'column', alignItems: 'flex-start' }]}>
       <View>
         {isEditing ? (
+          <View>
           <TextInput
-            style={[styles.input, { alignSelf: 'flex-start' }]}
+            style={[styles.inputName,]}
+            activeOutlineColor= {Constants.primaryBlue}
             value={exerciseName}
             onChangeText={text => setExerciseName(text)}
             onBlur={() => {
@@ -156,9 +163,10 @@ const ExerciseBox = ({ exercise_id, plan_id, name, weight, reps, onDelete, onEdi
             autoFocus
             selectTextOnFocus={true}
             textColor="#fff"
-            mode='flat'
+            mode='outlined'
             activeUnderlineColor={Constants.primaryBlue}
           />
+          </View>
         ) : (
           <TouchableOpacity onPress={() => setIsEditing(true)}>
             <Text style={[styles.label, { alignSelf: 'flex-start' }]}>{exerciseName}</Text>
@@ -167,24 +175,26 @@ const ExerciseBox = ({ exercise_id, plan_id, name, weight, reps, onDelete, onEdi
       </View>
 
       <View
-    style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      alignSelf: 'center',
-    }}
-  >
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          alignSelf: 'center',
+        }}
+      >
         <TextInput
           mode="outlined"
-          label="Weight (kg)"
-          value={selectedWeight ? String(selectedWeight) : ''}
+          label="Sets"
+          value={selectedSets ? String(selectedSets) : ''}
           onChangeText={text => {
-            const numeric = text.replace(/[^0-9]/g, '');
-            setSelectedWeight(numeric);
-            weightRef.current = numeric;
+            let formatted = text.replace(/[^0-9.]/g, '');
+            formatted = formatted.replace(/\./g, ',');
+             formatted = formatted.replace(/^0+(?=\d)/, '');
+            setSelectedSets(formatted);
+            setsRef.current = formatted;
           }}
+           
           onBlur={updateExerciseData}
-         
           keyboardType="numeric"
           style={styles.input}
           textColor="#fff"
@@ -195,16 +205,47 @@ const ExerciseBox = ({ exercise_id, plan_id, name, weight, reps, onDelete, onEdi
             },
           }}
         />
-        <Text style={{ fontSize: 24, color: '#fff', marginHorizontal: 4 }}>×</Text>
+        <TextInput
+          mode="outlined"
+          ref={inputRef}
+          label="Weight (kg)"
+          value={selectedWeight ? String(selectedWeight) : ''}
+          onChangeText={text => {
+            let formatted = text.replace(/[^0-9.,]/g, '');
+            formatted = formatted.replace(/\./g, ',');
+            const parts = formatted.split(',');
+            if (parts.length > 2) {
+              formatted = parts[0] + ',' + parts.slice(1).join('');
+            }
+             formatted = formatted.replace(/^0+(?=\d)/, '');
+
+            setSelectedWeight(formatted);
+            weightRef.current = formatted;
+          }}
+          onBlur={updateExerciseData}
+          keyboardType="decimal-pad"
+          style={styles.input}
+
+          textColor="#fff"
+          activeOutlineColor= {Constants.primaryBlue}
+          theme={{
+            colors: {
+              onSurfaceVariant: '#888888', 
+            },
+          }}
+        />
         <TextInput
           mode="outlined"
           label="Repetitions"
           value={selectedReps ? String(selectedReps) : ''}
           onChangeText={text => {
-            const numeric = text.replace(/[^0-9]/g, '');
-            setSelectedReps(numeric);
-            repsRef.current = numeric;
+            let formatted = text.replace(/[^0-9.]/g, '');
+            formatted = formatted.replace(/\./g, ',');
+             formatted = formatted.replace(/^0+(?=\d)/, '');
+            setSelectedReps(formatted);
+            repsRef.current = formatted;
           }}
+           
           onBlur={updateExerciseData}
           keyboardType="numeric"
           style={styles.input}
@@ -255,6 +296,17 @@ const styles = StyleSheet.create({
     
     
    
+  },
+  inputName:{
+    backgroundColor: '#333',
+  height: 40,            
+  paddingVertical: 0,    
+  textAlignVertical: 'center', 
+  fontSize: 16,          
+  borderRadius: 8,       
+  color: '#fff',
+    minHeight: 40,   
+    maxHeight: 40 
   },
   dropdown: {
     borderColor: '#555',
