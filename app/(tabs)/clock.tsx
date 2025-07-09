@@ -7,8 +7,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, K
 import { Audio } from 'expo-av';
 import phaseSwitchSound from '../assets/sounds/phaseSwitchSound.mp3';
 import sessionEndSound from '../assets/sounds/sessionEndSound.mp3';
-
-
+import TimeSelector from '../components/timeSelctor';
+import SetSelector from '../components/setSelctor';
 
 export default function IntervalTimer() {
   const [exerciseDuration, setExerciseDuration] = useState('30');
@@ -80,6 +80,8 @@ export default function IntervalTimer() {
     }
   }, [timeLeft]);
 
+
+
   return (
     <PaperProvider>
        <KeyboardAvoidingView
@@ -98,97 +100,38 @@ export default function IntervalTimer() {
   scrollEventThrottle={16}>
 
       {editMode ? (
-        <>
-          <TextInput
-            mode='outlined'
-            label='Exercise Time (sec)'
-            style={styles.input}
-            keyboardType="numeric"
-            value={exerciseDuration}
-            onChangeText={text => {
-            let formatted = text.replace(/[^0-9.,]/g, '');
-            formatted = formatted.replace(/\./g, ',');
-            const parts = formatted.split(',');
-            if (parts.length > 2) {
-              formatted = parts[0] + ',' + parts.slice(1).join('');
-            }
-             formatted = formatted.replace(/^0+(?=\d)/, '');
-
-            setExerciseDuration(formatted);
-          }}
-            placeholder="Exercise Time (sec)"
-            placeholderTextColor="#aaa"
-            activeOutlineColor={Constants.primaryBlue}
-             textColor="#fff"
-             
-          theme={{
-            colors: {
-              onSurfaceVariant: '#888888', 
-            },
-          }}
+      <>
+        <SetSelector
+        label="Total Sets"
+        value={parseInt(totalSets)} 
+        onChange={(val) => setTotalSets(String(Math.round(val)))}
           />
-          <TextInput
-            style={styles.input}
-            mode='outlined'
-            label='Break Time (sec'
-            keyboardType="numeric"
-            value={breakDuration}
-            onChangeText={text => {
-            let formatted = text.replace(/[^0-9.,]/g, '');
-            formatted = formatted.replace(/\./g, ',');
-            const parts = formatted.split(',');
-            if (parts.length > 2) {
-              formatted = parts[0] + ',' + parts.slice(1).join('');
-            }
-             formatted = formatted.replace(/^0+(?=\d)/, '');
-
-            setBreakDuration(formatted);
-          }}
-            placeholder="Break Time (sec)"
-            placeholderTextColor="#aaa"
-             activeOutlineColor={Constants.primaryBlue}
-             textColor="#fff"
-          theme={{
-            colors: {
-              onSurfaceVariant: '#888888', 
-            },
-          }}
-          />
-          <TextInput
-            style={styles.input}
-            mode='outlined'
-            label='Total Sets'
-            keyboardType="numeric"
-            value={totalSets}
-           onChangeText={text => {
-            let formatted = text.replace(/[^0-9.]/g, '');
-            formatted = formatted.replace(/\./g, ',');
-             formatted = formatted.replace(/^0+(?=\d)/, '');
-            setTotalSets(formatted);
-          }}
-            placeholder="Number of Sets"
-            placeholderTextColor="#aaa"
-             activeOutlineColor={Constants.primaryBlue}
-             textColor="#fff"
-
-          theme={{
-            colors: {
-              onSurfaceVariant: '#888888', 
-            },
-          }}
-          />
-        </>
+        <TimeSelector
+          label="Exercise Time"
+          value={parseInt(exerciseDuration)}
+          onChange={(val) => setExerciseDuration(String(val))}
+        />
+        <TimeSelector
+          label="Break Time"
+          value={parseInt(breakDuration)}
+          onChange={(val) => setBreakDuration(String(val))}
+        />
+    
+    </>
       ) : (
         <View style={styles.timerBox}>
-          <Text style={styles.phaseText}>
-            {isRunning ? (isExercise ? 'Exercise' : 'Break') : 'Done'}
-          </Text>
-          <Text style={styles.timeText}>
-            {String(timeLeft).padStart(2, '0')}s
-          </Text>
           <Text style={styles.setText}>
             Set {currentSet} / {totalSets}
           </Text>
+          
+          <Text style={styles.timeText}>
+            {String(timeLeft).padStart(2, '0')}s
+          </Text>
+
+          <Text style={styles.phaseText}>
+            {isRunning ? (isExercise ? 'Exercise' : 'Break') : 'Done'}
+          </Text>
+          
         </View>
       )}
 
@@ -247,7 +190,7 @@ const styles = StyleSheet.create({
   phaseText: {
     fontSize: 20,
     color: '#ccc',
-    marginBottom: 10,
+    marginTop: 10,
   },
   timeText: {
     fontSize: 64,
@@ -257,7 +200,7 @@ const styles = StyleSheet.create({
   setText: {
     fontSize: 18,
     color: '#ccc',
-    marginTop: 10,
+    marginBottom: 10,
   },
   buttonRow: {
     flexDirection: 'row',

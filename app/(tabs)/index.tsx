@@ -39,7 +39,6 @@ export default function Index() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const workoutPlans = plans.map(plan => plan.name);
   const plansMap: Record<string, string> = plans.reduce((acc, plan) => {
   acc[plan.id] = plan.name;
   return acc;
@@ -55,12 +54,19 @@ export default function Index() {
  useEffect(() => {
   const loadPlans = async () => {
     try {
+      
       // clearAllStorage(); 
       const storedPlans = await AsyncStorage.getItem('gymPlans');
       if (storedPlans !== null) {
         // ✅ Daten aus Storage laden
         const parsedPlans = JSON.parse(storedPlans);
         setPlans(parsedPlans);
+        const lastSelectedPlanId = await AsyncStorage.getItem('lastSelectedPlanId');
+        if (lastSelectedPlanId && parsedPlans.some((p: { id: string; }) => p.id === lastSelectedPlanId)) {
+          setSelectedPlan(lastSelectedPlanId);
+        } else {
+          setSelectedPlan(parsedPlans[0].id); 
+        }
       } else {
         // ✅ KEINE gespeicherten Pläne → Beispiel-Daten verwenden
         setPlans(data); 
@@ -68,7 +74,9 @@ export default function Index() {
 
         // ❗️Und direkt speichern, damit sie beim nächsten Start da sind
         await AsyncStorage.setItem('gymPlans', JSON.stringify(data));
+       
       }
+      
     } catch (error) {
       console.error('Failed to load plans:', error);
       // Optional: setPlans(data); // Falls du auch bei Fehler fallback willst
@@ -87,6 +95,12 @@ export default function Index() {
       savePlans();
     }
   }, [plans, isLoading]);
+
+  useEffect(() => {
+  if (selectedPlan) {
+    AsyncStorage.setItem('lastSelectedPlanId', selectedPlan);
+  }
+}, [selectedPlan]);
 
    
 
