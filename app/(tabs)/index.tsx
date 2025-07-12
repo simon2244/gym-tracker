@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, View, KeyboardAvoidingView } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Button, Dialog, Icon, IconButton, PaperProvider, TextInput } from "react-native-paper";
 import ExerciseBox from "../components/exerciseBox";
 import PillList from "../components/PillList";
 import Constants from "../constants";
 import rawData from "../data.json";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {usePlans} from "../context/planscontext";
+import { Exercise, Plan } from "../context/planscontext";
+import DraggableFlatList, {
+  RenderItemParams,
+} from 'react-native-draggable-flatlist';
 
 
 // Clean up data to remove undefined exercises
@@ -19,25 +23,11 @@ const data = rawData.map(plan => ({
 }));
 
 
-export type Exercise = {
-   id: string;
-  name: string;
-  sets: string;
-  weight: string;
-  reps: string;
-};
-export type Plan = {
-  id: string;
-  name: string;
-  exercises: {
-    [key: string]: Exercise;
-  };
-};
+
 
 
 export default function Index() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+ const { plans, setPlans, isLoading } = usePlans();
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const plansMap: Record<string, string> = plans.reduce((acc, plan) => {
   acc[plan.id] = plan.name;
@@ -47,73 +37,35 @@ export default function Index() {
   const [showAddPlanDialog, setShowAddPlanDialog] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
   const screenWidth = Dimensions.get('window').width;
+  const [reorderMode, setReorderMode] = useState(false);
+
 
 
    
-  // Load plans from storage when component mounts
- useEffect(() => {
-  const loadPlans = async () => {
-    try {
-      
-      // clearAllStorage(); 
-      const storedPlans = await AsyncStorage.getItem('gymPlans');
-      if (storedPlans !== null) {
-        // ✅ Daten aus Storage laden
-        const parsedPlans = JSON.parse(storedPlans);
-        setPlans(parsedPlans);
-        const lastSelectedPlanId = await AsyncStorage.getItem('lastSelectedPlanId');
-        if (lastSelectedPlanId && parsedPlans.some((p: { id: string; }) => p.id === lastSelectedPlanId)) {
-          setSelectedPlan(lastSelectedPlanId);
-        } else {
-          setSelectedPlan(parsedPlans[0].id); 
-        }
-      } else {
-        // ✅ KEINE gespeicherten Pläne → Beispiel-Daten verwenden
-        setPlans(data); 
-
-
-        // ❗️Und direkt speichern, damit sie beim nächsten Start da sind
-        await AsyncStorage.setItem('gymPlans', JSON.stringify(data));
-       
+  function handleReorder(newOrder: Exercise[]) {
+  setPlans(prevPlans =>
+    prevPlans.map(plan => {
+      if (plan.id === selectedPlan) {
+        const reordered = Object.fromEntries(
+          newOrder.map(ex => [ex.id, ex])
+        );
+        return {
+          ...plan,
+          exercises: reordered,
+        };
       }
-      
-    } catch (error) {
-      console.error('Failed to load plans:', error);
-      // Optional: setPlans(data); // Falls du auch bei Fehler fallback willst
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  loadPlans();
-}, []);
-  
-  // Save plans to storage whenever they change
-  useEffect(() => {
-   
-    // Don't save on initial load
-    if (!isLoading) {
-      savePlans();
-    }
-  }, [plans, isLoading]);
+      return plan;
+    })
+  );
+}
 
-  useEffect(() => {
-  if (selectedPlan) {
-    AsyncStorage.setItem('lastSelectedPlanId', selectedPlan);
-  }
-}, [selectedPlan]);
+ 
 
    
 
 
  
-const savePlans = async () => {
-      try {
-        await AsyncStorage.setItem('gymPlans', JSON.stringify(plans));
-        // console.log('Plans saved successfully: '+ JSON.stringify(plans));
-      } catch (error) {
-        console.error('Failed to save plans:', error);
-      }
-    };
+
     
   // Function to get the next plan ID based on existing plans  
   function nextPlanId() {
@@ -206,9 +158,6 @@ const savePlans = async () => {
     );
   }
 
-  function handleSave(): void {
-    savePlans();
-  }
 
   function handleEditExercise(id: string): void {
     throw new Error("Function not implemented.");
@@ -236,17 +185,28 @@ const savePlans = async () => {
 
   return (
     <PaperProvider>
-      
+    {/* <KeyboardAvoidingView> */}
      
     <View style={styles.container}>
-      <View style={[styles.topBar]} >
+      <View style={[styles.topBar, { alignItems: 'center' }]}>
         <PillList
           items={plansMap}
           selectedIndex={plans.findIndex(plan => plan.id === selectedPlan)}
           onSelect={(planId) => setSelectedPlan(planId)}
           addPlan={handleAddPlan}
           deletePlan={(planId) => setPlans(plans.filter(plan => plan.id !== planId))}
+        />
+        <View style={{ flex: 1 }} />
+        <View >
+          <IconButton
+            icon={reorderMode ? "check" : "drag"}
+            mode="contained"
+            iconColor="#fff"
+            size={24}
+            onPress={() => setReorderMode(!reorderMode)}
+            style={{ backgroundColor: Constants.primaryBlue, marginRight: 15 }}
           />
+        </View>
       </View>
       <ScrollView
         contentContainerStyle={{ 
@@ -258,22 +218,43 @@ const savePlans = async () => {
         scrollEventThrottle={16}
       >
          <GestureHandlerRootView style={{ flex: 1, width: '100%' }}>
-             <View style={{ width: screenWidth, paddingHorizontal: screenWidth > 1200 ? 300 :20 }}>
-        {getExercisesByPlanId(selectedPlan).map((exercise, idx) => (
-         <ExerciseBox 
-          key={`${selectedPlan}-${exercise.id}`} 
-          exercise_id={`${exercise.id}`}
-          plan_id={`${plans.find(plan => plan.id === selectedPlan)?.id}`}
-          name={exercise.name} 
-          sets={exercise.sets}
-          weight={exercise.weight}
-          reps={exercise.reps}
-          onDelete={() => handleDeleteExercise(exercise.id)}
-          onEdit={() => handleEditExercise(exercise.id)} />
-          
-        ))}
-         </View>
-        </GestureHandlerRootView>
+            <View style={{ width: screenWidth, paddingHorizontal: screenWidth > 1200 ? 300 :20 }}>
+              <DraggableFlatList
+                data={getExercisesByPlanId(selectedPlan)}
+                keyExtractor={(item) => `${selectedPlan}-${item.id}`}
+                onDragEnd={({ data }) => handleReorder(data)}
+                renderItem={({ item, drag, isActive }: RenderItemParams<Exercise>) => (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      opacity: isActive ? 0.8 : 1,
+                      paddingHorizontal: 8,
+                    }}
+                  >
+                    {reorderMode && (
+                        <IconButton
+                          icon="drag"
+                          size={20}
+                          onPressIn={drag}
+                          style={{ marginRight: 8, marginLeft: 4 }}
+                          iconColor="#ccc"
+                        />
+                      )}
+                    <View style={{ flex: 1 }}>
+                      <ExerciseBox
+                        {...item}
+                        exercise_id={item.id}
+                        plan_id={selectedPlan}
+                        onDelete={() => handleDeleteExercise(item.id)}
+                        onEdit={() => handleEditExercise(item.id)}
+                      />
+                    </View>
+                  </View>
+                )}
+              />
+            </View>
+            </GestureHandlerRootView>
        
           <View style={{ justifyContent: 'flex-start' }}>   
             <IconButton
@@ -331,7 +312,7 @@ const savePlans = async () => {
     </Dialog>
     </View>
     
-    {/* </GestureHandlerRootView> */}
+    {/* </KeyboardAvoidingView> */}
     </PaperProvider>
   );
 }

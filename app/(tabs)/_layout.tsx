@@ -1,11 +1,14 @@
 import { Tabs } from 'expo-router';
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import React from 'react';
 import Constants from '../constants';
+import { PlansProvider } from '../context/planscontext';
 
 
 export default function TabLayout() {
   return (
+    <PlansProvider>
     <Tabs
     initialRouteName='index'
       screenOptions={{
@@ -57,5 +60,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </PlansProvider>
   );
 }

@@ -14,7 +14,8 @@ type TimeSelectorProps = {
 
 export default function TimeSelector({ label, value, onChange }: TimeSelectorProps) {
   const [selectedPart, setSelectedPart] = useState<'min' | 'sec'>('min');
-
+  const [spulenVor, setSpulenVor] = useState(false);
+  const [spulenBack, setSpulenBack] = useState(false);
 
     const formatTime = (seconds: number) => {
   const mm = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -39,13 +40,8 @@ const parseTime = (time: string) => {
     setSelectedPart(prev => (prev === 'min' ? 'sec' : 'min'));
   };
 
- 
+  
 
-  const commitEdit = () => {
-    const parsed = parseTime(editText);
-    if (!isNaN(parsed)) onChange(parsed);
-    setIsEditing(false);
-  };
 
 
  const [isEditing, setIsEditing] = useState(false);
@@ -59,6 +55,9 @@ const parseTime = (time: string) => {
        <Button
           mode="contained"
           onPress={() => changeTime(-1)}
+          onLongPress={() => setSpulenBack(true)}
+          onResponderRelease={() => setSpulenBack(false)}
+          textColor='#fff'
           style={{
             backgroundColor: Constants.primaryBlue,
             height: 40,
@@ -134,6 +133,9 @@ const parseTime = (time: string) => {
          <Button
           mode="contained"
           onPress={() => changeTime(1)}
+          onLongPress={() => setSpulenVor(true)}
+          onResponderRelease={() => setSpulenVor(false)}
+          textColor='#fff'
           style={{
             backgroundColor: Constants.primaryBlue,
             height: 40,

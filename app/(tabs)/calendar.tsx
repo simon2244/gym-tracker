@@ -1,151 +1,297 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import dayjs from 'dayjs';
+import { usePlans } from '../context/planscontext';
 import Constants from '../constants';
+import { IconButton, Modal, Portal, Button, PaperProvider, Menu, Checkbox } from 'react-native-paper';
 
-const daysOfWeek = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
+export default function CalendarScreen() {
+  const { schedule, setSchedule, plans } = usePlans();
+  const [startDate, setStartDate] = useState(dayjs());
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [menuVisibleDay, setMenuVisibleDay] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState<dayjs.Dayjs | null>(null);
+  const [dailyOverrides, setDailyOverrides] = useState<Record<string, string[]>>({});
 
-function getFirstWeekdayOfMonth(year: number, month: number) {
-  const day = new Date(year, month, 1).getDay(); // Sonntag=0, Montag=1, ...
-  // Umrechnung: Montag=0, Sonntag=6
-  return day === 0 ? 6 : day - 1;
-}
 
-export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-indexed
-
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstWeekday = getFirstWeekdayOfMonth(year, month);
-
-  const screenWidth = Dimensions.get('window').width;
-  const cellSize = screenWidth / 7;
-
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+  // Generate list of future days
+  const generateDates = () => {
+    return Array.from({ length: 90 }, (_, i) => startDate.add(i, 'day'));
   };
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+  const getPlannedPlans = (date: dayjs.Dayjs): string[] => {
+  const dateKey = date.format('YYYY-MM-DD');
+  const overridePlans = dailyOverrides[dateKey];
 
-  // Build array of days with empty slots for leading blanks
-  const calendarDays = [];
+  const planIds = overridePlans ?? schedule[date.format('dddd') as keyof typeof schedule];
 
-  for (let i = 0; i < firstWeekday; i++) {
-    calendarDays.push(null);
+  if (!Array.isArray(planIds)) return [];
+
+  return planIds
+    .map(id => plans.find(p => p.id === id)?.name)
+    .filter(Boolean) as string[];
+};
+
+  const getPlansForDate = (date: dayjs.Dayjs): string[] => {
+  const dateKey = date.format('YYYY-MM-DD');
+  if (dailyOverrides[dateKey]) {
+    return dailyOverrides[dateKey];
   }
-  for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push(day);
+  const weekday = date.format('dddd') as keyof typeof schedule;
+  return schedule[weekday] || [];
+};
+
+
+  function editDay(date: dayjs.Dayjs): void {
+   setEditDate(date);
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={prevMonth} style={styles.navButton}>
-          <Text style={styles.navButtonText}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.monthText}>
-          {currentDate.toLocaleString('de-DE', { month: 'long' })} {year}
-        </Text>
-        <TouchableOpacity onPress={nextMonth} style={styles.navButton}>
-          <Text style={styles.navButtonText}>{'>'}</Text>
-        </TouchableOpacity>
-      </View>
+    <PaperProvider>
+      <View style={styles.container}>
+        <View style={styles.topBar}>
+          <IconButton
+            icon="dots-horizontal"
+            mode="contained"
+            iconColor="#fff"
+            size={24}
+            onPress={() => setShowScheduleModal(true)}
+            style={{ backgroundColor: Constants.primaryBlue }}
+          />
+        </View>
 
-      {/* Days of week header */}
-      <View style={styles.weekdaysRow}>
-        {daysOfWeek.map((day) => (
-          <View key={day} style={[styles.dayCell, { width: cellSize }]}>
-            <Text style={styles.weekdayText}>{day}</Text>
-          </View>
-        ))}
-      </View>
+        <FlatList
+          data={generateDates()}
+          keyExtractor={item => item.format('YYYY-MM-DD')}
+          renderItem={({ item }) => {
+            const dateStr = item.format('dddd, DD MMM');
+            const plannedPlanNames = getPlannedPlans(item);
+            const hasPlans = plannedPlanNames.length > 0;
 
-      {/* Calendar grid */}
-      <ScrollView contentContainerStyle={styles.calendarGrid}>
-        {calendarDays.map((day, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.dayCell, { width: cellSize, height: cellSize }]}
-            disabled={day === null}
-            onPress={() => day && alert(`Tag ${day}.${month + 1}.${year} ausgewählt`)}
+            return (
+              <View style={styles.dayRow}>
+                <Text style={styles.dateText}>{dateStr}</Text>
+                <View style={styles.planRow}>
+                  <Text style={styles.planText}>
+                    {hasPlans ? plannedPlanNames.join(', ') : 'Break Day'}
+                  </Text>
+                  <IconButton
+                    icon="pencil"
+                    size={18}
+                    style={styles.editIcon}
+                    iconColor="#aaa"
+                    onPress={() => editDay(item)}
+                  />
+                </View>
+              </View>
+            );
+          }} />
+        
+
+        {/* Schedule Config Modal */}
+        <Portal>
+          <Modal
+            visible={showScheduleModal}
+            onDismiss={() => setShowScheduleModal(false)}
+            contentContainerStyle={styles.modalContainer}
           >
-            <Text style={[styles.dayText, day === currentDate.getDate() ? styles.todayText : null]}>
-              {day || ''}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+            <Text style={styles.modalTitle}>Weekly Plan</Text>
+            {daysOfWeek.map(day => {
+              const selectedPlanIds = schedule[day as keyof typeof schedule] || [];
+              const selectedPlanNames = plans
+                .filter(p => selectedPlanIds.includes(p.id))
+                .map(p => p.name)
+                .join(', ') || 'Break Day';
+
+              return (
+                <View key={day} style={styles.scheduleRow}>
+                  <Text style={styles.dayText}>{day}</Text>
+
+                  <Menu
+                    visible={menuVisibleDay === day}
+                    onDismiss={() => setMenuVisibleDay(null)}
+                    anchor={
+                      <Button
+                        mode="outlined"
+                        onPress={() => setMenuVisibleDay(day)}
+                        textColor="#fff"
+                      >
+                        {selectedPlanNames}
+                      </Button>
+                    }
+                    contentStyle={{ backgroundColor: '#333' }}
+                  >
+                    {plans.map(plan => {
+                      const isSelected = selectedPlanIds.includes(plan.id);
+                      return (
+                        <Menu.Item
+                          key={plan.id}
+                          onPress={() => {
+                            const updated = isSelected
+                              ? selectedPlanIds.filter(id => id !== plan.id)
+                              : [...selectedPlanIds, plan.id];
+
+                            setSchedule(prev => ({
+                              ...prev,
+                              [day]: updated,
+                            }));
+                          }}
+                          title={
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <Checkbox
+                                status={isSelected ? 'checked' : 'unchecked'}
+                                onPress={() => {
+                                  const updated = isSelected
+                                    ? selectedPlanIds.filter(id => id !== plan.id)
+                                    : [...selectedPlanIds, plan.id];
+                                  setSchedule(prev => ({
+                                    ...prev,
+                                    [day]: updated,
+                                  }));
+                                }}
+                                color={Constants.primaryBlue}
+                                uncheckedColor="#ccc"
+                              />
+                              <Text style={{ color: '#fff' }}>{plan.name}</Text>
+                            </View>
+                          }
+                        />
+                      );
+                    })}
+                  </Menu>
+                </View>
+              );
+            })}
+
+            <Button
+              mode="contained"
+              onPress={() => setShowScheduleModal(false)}
+              textColor='#fff'
+              style={{ marginTop: 16, backgroundColor: Constants.primaryBlue }}
+            >
+              Ok
+            </Button>
+          </Modal>
+        </Portal>
+        <Portal>
+  {editDate && (
+    <Modal
+      visible={true}
+      onDismiss={() => setEditDate(null)}
+      contentContainerStyle={styles.modalContainer}
+    >
+      <Text style={styles.modalTitle}>
+        Plans on {editDate.format('dddd, DD MMM')}
+      </Text>
+
+      {plans.map(plan => {
+        const dateKey = editDate.format('YYYY-MM-DD');
+        const selectedPlanIds = getPlansForDate(editDate);
+        const isSelected = selectedPlanIds.includes(plan.id);
+
+        const togglePlan = () => {
+          const updated = isSelected
+            ? selectedPlanIds.filter(id => id !== plan.id)
+            : [...selectedPlanIds, plan.id];
+
+          setDailyOverrides(prev => ({
+            ...prev,
+            [dateKey]: updated,
+          }));
+        };
+
+        return (
+          <View key={plan.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Checkbox
+              status={isSelected ? 'checked' : 'unchecked'}
+              onPress={togglePlan}
+              color={Constants.primaryBlue}
+              uncheckedColor="#ccc"
+            />
+            <Text style={{ color: '#fff' }}>{plan.name}</Text>
+          </View>
+        );
+      })}
+
+      <Button
+        mode="contained"
+        onPress={() => setEditDate(null)}
+        textColor= '#fff'
+        style={{ marginTop: 16, backgroundColor: Constants.primaryBlue }}
+      >
+        Ok
+      </Button>
+    </Modal>
+  )}
+</Portal>
+
+      </View>
+    </PaperProvider>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Constants.backgroundDark,
-    paddingTop: 40,
+    paddingTop: 50,
   },
-  header: {
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  dayRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  planText: {
+    fontSize: 14,
+    color: '#aaa',
+    marginTop: 4,
+  },
+  modalContainer: {
+    backgroundColor: '#222',
+    padding: 20,
+    margin: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    color: '#fff',
+    marginBottom: 16,
+  },
+  scheduleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     marginBottom: 12,
   },
-  navButton: {
-    padding: 10,
-    backgroundColor: Constants.primaryBlue,
-    borderRadius: 8,
-  },
-  navButtonText: {
-    color: '#fff',
-    fontSize: 20,
-  },
-  monthText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textTransform: 'capitalize',
-  },
-  weekdaysRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#555',
-  },
-  dayCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: '#444',
-  },
-  weekdayText: {
-    color: '#aaa',
-    fontWeight: '600',
-    paddingVertical: 6,
-  },
   dayText: {
-    color: '#eee',
+    color: '#fff',
     fontSize: 16,
   },
-  todayText: {
-    backgroundColor: Constants.primaryBlue,
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    overflow: 'hidden',
-    color: 'white',
-    fontWeight: 'bold',
+  planRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 8,
   },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  editIcon: {
+    marginLeft: 8,
+    padding: 0,
+    height: 24,
+    width: 24,
+    backgroundColor: 'transparent',
   },
+
 });

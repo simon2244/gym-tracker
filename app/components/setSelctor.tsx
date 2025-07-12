@@ -37,7 +37,7 @@ export default function SetSelector({ label, value, onChange }: SetSelectorProps
   ]}
           contentStyle={styles.buttonContent}
           labelStyle={styles.buttonLabel}
-          
+          textColor='#fff'
         >–</Button>
 
         <TouchableWithoutFeedback onPress={() => {}} onLongPress={() => setIsEditing(true)}>
@@ -72,6 +72,7 @@ export default function SetSelector({ label, value, onChange }: SetSelectorProps
   ]}
           contentStyle={styles.buttonContent}
           labelStyle={styles.buttonLabel}
+          textColor='#fff'
         >+</Button>
       </View>
     </View>

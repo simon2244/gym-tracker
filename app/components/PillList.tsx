@@ -1,6 +1,7 @@
 import React, { use, useRef, useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, ScrollView, Modal, TouchableWithoutFeedback } from 'react-native';
 import Constants from '../constants';
+
 type PillListProps = {
     items: Record<string, string>;
     selectedIndex?: number;

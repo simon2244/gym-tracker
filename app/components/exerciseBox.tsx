@@ -3,9 +3,9 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Text, TextInput } from 'react-native-paper';
 import Constants from '../constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Exercise, Plan } from '../(tabs)';
 import { TextInput as RNTextInput } from 'react-native';
+import {usePlans} from '../context/planscontext';
+
 
 type ExerciseBoxProps = {
   exercise_id: string;
@@ -23,20 +23,19 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
   const [selectedWeight, setSelectedWeight] = useState(weight || '0');
   const [selectedReps, setSelectedReps] = useState(reps || '0');
   const [selectedSets, setSelectedSets] = useState(sets || '0');
+  const { updateExerciseData } = usePlans();
+  
 
-  const exerciseNameRef = useRef<String>(exerciseName);
-  const weightRef = useRef<String>(selectedWeight);
-  const repsRef = useRef<String>(selectedReps);
-  const setsRef = useRef<String>(selectedSets);
-  const [loading, setLoading] = useState(true);
+  const exerciseNameRef = useRef<string>(exerciseName);
+  const weightRef = useRef<string>(selectedWeight);
+  const repsRef = useRef<string>(selectedReps);
+  const setsRef = useRef<string>(selectedSets);
 
   
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<RNTextInput>(null);
 
    
-  // if (loading) return <Text style={{color: '#fff'}}>Wird geladen...</Text>;
-  // if (!exercise) return <Text style={{color: '#fff'}}>Übung nicht gefunden</Text>;
   
   const LeftSwipeAction = () => {
   return (
@@ -94,42 +93,7 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
   );
 };
 
-//TODO mach ein debounce für die Updates, damit nicht bei jedem Zeichenwechsel gespeichert wird
-  async function updateExerciseData() {
-    try {
-    const storedData = await AsyncStorage.getItem('gymPlans');
-    if (!storedData) return;
 
-    let storedPlans = JSON.parse(storedData);
-    const planIndex = storedPlans.findIndex((plan: Plan) => plan.id === plan_id);
-    if (planIndex === -1) return;
-
-    const plan = storedPlans[planIndex];
-
-    // ✅ Exercise im Objekt aktualisieren
-    const exerciseKey = Object.keys(plan.exercises).find(
-      (key) => plan.exercises[key].id === exercise_id
-    );
-
-    if (!exerciseKey) return;
-
-    plan.exercises[exerciseKey] = {
-      ...plan.exercises[exerciseKey],
-      name: exerciseName,
-      weight: selectedWeight,
-      reps: selectedReps,
-    };
-
-    // ✅ Plan im Array ersetzen
-    storedPlans[planIndex] = plan;
-
-    // ✅ Speichern
-    await AsyncStorage.setItem('gymPlans', JSON.stringify(storedPlans));
-    console.log('Exercise updated successfully');
-  } catch (error) {
-    console.error('Failed to update exercise:', error);
-  }
-  }
 
   return (
     <View >
@@ -152,11 +116,12 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             activeOutlineColor= {Constants.primaryBlue}
             value={exerciseName}
             onChangeText={text => setExerciseName(text)}
-            onBlur={() => {
+            onBlur={() => {            
               if (!exerciseName.trim()) {
                 setExerciseName(name);
                 exerciseNameRef.current = name;
-                updateExerciseData();
+                console.log("das ist der neue Exercise name: " + exerciseNameRef.current);
+                updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current);
               }
               setIsEditing(false);
             }}
@@ -193,8 +158,8 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             setSelectedSets(formatted);
             setsRef.current = formatted;
           }}
-           
-          onBlur={updateExerciseData}
+
+          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current) }}
           keyboardType="numeric"
           style={styles.input}
           textColor="#fff"
@@ -222,7 +187,7 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             setSelectedWeight(formatted);
             weightRef.current = formatted;
           }}
-          onBlur={updateExerciseData}
+          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current)}}
           keyboardType="decimal-pad"
           style={styles.input}
 
@@ -245,8 +210,8 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             setSelectedReps(formatted);
             repsRef.current = formatted;
           }}
-           
-          onBlur={updateExerciseData}
+
+          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current)}}
           keyboardType="numeric"
           style={styles.input}
           textColor="#fff"
