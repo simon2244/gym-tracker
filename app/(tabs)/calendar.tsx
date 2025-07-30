@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import dayjs from 'dayjs';
 import { usePlans } from '../context/planscontext';
@@ -8,18 +8,49 @@ import { IconButton, Modal, Portal, Button, PaperProvider, Menu, Checkbox } from
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function CalendarScreen() {
-  const { schedule, setSchedule, plans } = usePlans();
+  const { schedule, setSchedule, plans, dailyOverrides, setDailyOverrides } = usePlans();
   const [startDate, setStartDate] = useState(dayjs());
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [menuVisibleDay, setMenuVisibleDay] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<dayjs.Dayjs | null>(null);
-  const [dailyOverrides, setDailyOverrides] = useState<Record<string, string[]>>({});
+  // const [dailyOverrides, setDailyOverrides] = useState<Record<string, string[]>>({});
+  const isPast = (item: dayjs.Dayjs) => item.isBefore(dayjs(), 'day');
+  const flatListRef = useRef<FlatList>(null);
 
 
   // Generate list of future days
   const generateDates = () => {
-    return Array.from({ length: 90 }, (_, i) => startDate.add(i, 'day'));
+     const today = dayjs();
+  
+    // 30 Tage in der Vergangenheit (gestern als letzter Tag) + heute + 90 Tage in der Zukunft
+    const pastDays = Array.from({ length: 30 }, (_, i) => today.subtract(30 - i, 'day'));
+    const futureDays = Array.from({ length: 90 }, (_, i) => today.add(i + 1, 'day'));
+    
+    // Kombiniere vergangene Tage + heute + zukünftige Tage
+    return [...pastDays, today, ...futureDays];
   };
+
+   // Memoize the dates to avoid regenerating on each render
+  const dates = React.useMemo(() => generateDates(), []);
+  
+  // Finde den Index des heutigen Tages in der Liste
+  const getTodayIndex = () => {
+    const today = dayjs().format('YYYY-MM-DD');
+    return dates.findIndex(date => date.format('YYYY-MM-DD') === today);
+  };
+   // Scroll zum heutigen Tag, wenn die Komponente geladen wird
+  useEffect(() => {
+    const todayIndex = getTodayIndex();
+    if (todayIndex !== -1 && flatListRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: todayIndex,
+          animated: false ,
+          viewPosition: 0.3,
+        });
+      }, 100);
+    }
+  }, []);
 
   const getPlannedPlans = (date: dayjs.Dayjs): string[] => {
   const dateKey = date.format('YYYY-MM-DD');
@@ -52,6 +83,24 @@ export default function CalendarScreen() {
     <PaperProvider>
       <View style={styles.container}>
         <View style={styles.topBar}>
+          
+          <IconButton
+            icon="calendar-today"
+            mode="contained"
+            iconColor="#fff"
+            size={24}
+            onPress={() => {
+              const todayIndex = getTodayIndex();
+              if (todayIndex !== -1 && flatListRef.current) {
+                flatListRef.current.scrollToIndex({
+                  index: todayIndex,
+                  animated: true,
+                  viewPosition: 0.3,
+                });
+              }
+            }}
+            style={{ backgroundColor: Constants.primaryBlue}}
+          />
           <IconButton
             icon="dots-horizontal"
             mode="contained"
@@ -63,29 +112,53 @@ export default function CalendarScreen() {
         </View>
 
         <FlatList
+          ref={flatListRef}
           data={generateDates()}
           keyExtractor={item => item.format('YYYY-MM-DD')}
+          onScrollToIndexFailed={info => {
+            const wait = new Promise(resolve => setTimeout(resolve, 500));
+            wait.then(() => {
+              flatListRef.current?.scrollToIndex({ 
+                index: info.index, 
+                animated: false 
+              });
+            });
+          }}
           renderItem={({ item }) => {
             const dateStr = item.format('dddd, DD MMM');
             const plannedPlanNames = getPlannedPlans(item);
             const hasPlans = plannedPlanNames.length > 0;
+            const isToday = item.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
 
             return (
-              <View style={styles.dayRow}>
-                <Text style={styles.dateText}>{dateStr}</Text>
-                <View style={styles.planRow}>
-                  <Text style={styles.planText}>
-                    {hasPlans ? plannedPlanNames.join(', ') : 'Break Day'}
+                <View style={[
+                  styles.dayRow, 
+                  isPast(item) && styles.pastDayRow, // Zusätzliches Styling für vergangene Tage
+                  isToday && styles.todayRow // Hebe den heutigen Tag hervor
+                ]}>
+                  <Text style={[
+                    styles.dateText,
+                    isPast(item) && { color: '#777' }, 
+                    isToday && { color: '#fff', fontWeight: 'bold' } 
+                  ]}>
+                    {dateStr}
                   </Text>
-                  <IconButton
-                    icon="pencil"
-                    size={18}
-                    style={styles.editIcon}
-                    iconColor="#aaa"
-                    onPress={() => editDay(item)}
-                  />
-                </View>
-              </View>
+                  <View style={styles.planRow}>
+                    <Text style={[
+                      styles.planText,
+                      isPast(item) && { color: '#666' } // Dunklere Textfarbe für vergangene Tage
+                    ]}>
+                      {hasPlans ? plannedPlanNames.join(', ') : 'Break Day'}
+                    </Text>
+                    <IconButton
+                      icon="pencil"
+                      size={18}
+                      style={styles.editIcon}
+                      iconColor={isPast(item) ? "#666" : "#aaa"} // Dunklere Iconfarbe für vergangene Tage
+                      onPress={() => editDay(item)}
+                    />
+                  </View>
+    </View>
             );
           }} />
         
@@ -292,6 +365,14 @@ const styles = StyleSheet.create({
     height: 24,
     width: 24,
     backgroundColor: 'transparent',
+  },
+  pastDayRow: {
+  backgroundColor: '#1a1a1a', 
+},
+ todayRow: {
+    backgroundColor: Constants.primaryBlue + '40', 
+    borderLeftWidth: 3,
+    borderLeftColor: Constants.primaryBlue,
   },
 
 });

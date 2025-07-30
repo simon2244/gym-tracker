@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, View, KeyboardAvoidingView } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, View, KeyboardAvoidingView, NativeSyntheticEvent, NativeScrollEvent, Platform } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Button, Dialog, Icon, IconButton, PaperProvider, TextInput } from "react-native-paper";
 import ExerciseBox from "../components/exerciseBox";
@@ -38,6 +38,7 @@ export default function Index() {
   const [newPlanName, setNewPlanName] = useState('');
   const screenWidth = Dimensions.get('window').width;
   const [reorderMode, setReorderMode] = useState(false);
+  const [isAtListEnd, setIsAtListEnd] = useState(false);
 
 
 
@@ -119,7 +120,7 @@ export default function Index() {
   function handleAddExerciseButtonPress(){
     let id = nextExerciseId();
     if (typeof selectedPlan === 'string' && selectedPlan.trim() !== '') {
-      addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise","sets": '0', "weight": '0', "reps": '0'});
+      addExerciseToPlan(selectedPlan, {"id": `ex${id}`, "name": "New Exercise","sets": '0', "weight": '0', "reps": '0', "difficulty": 0});
     }
   }
 
@@ -182,6 +183,15 @@ export default function Index() {
     setShowAddPlanDialog(false);
     setNewPlanName('');
   }
+   // Function to check if we're near the end of the list
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 5; 
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= 
+      contentSize.height - paddingToBottom;
+      
+    setIsAtListEnd(isCloseToBottom);
+  };
 
   return (
     <PaperProvider>
@@ -208,22 +218,70 @@ export default function Index() {
           />
         </View>
       </View>
-      <ScrollView
-        contentContainerStyle={{ 
-          width: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        keyboardShouldPersistTaps="handled"
-        scrollEventThrottle={16}
-      >
-         <GestureHandlerRootView style={{ flex: 1, width: '100%' }}>
-            <View style={{ width: screenWidth, paddingHorizontal: screenWidth > 1200 ? 300 :20 }}>
+      
+        {Platform.OS === 'web' ? (
+          // Web-spezifischer Code mit normaler ScrollView
+          <ScrollView 
+            style={{ flex: 1, width: '100%' }}
+            contentContainerStyle={{ 
+              width: screenWidth, 
+              paddingHorizontal: screenWidth > 1200 ? 300 : 20 
+            }}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            {getExercisesByPlanId(selectedPlan).map((item) => (
+              <View
+                key={`${selectedPlan}-${item.id}`}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  opacity: 1,
+                  paddingHorizontal: 8,
+                }}
+              >
+                {reorderMode && (
+                  <IconButton
+                    icon="drag"
+                    size={20}
+                    style={{ marginRight: 8, marginLeft: 4 }}
+                    iconColor="#ccc"
+                  />
+                )}
+                <View style={{ flex: 1 }}>
+                  <ExerciseBox
+                    {...item}
+                    exercise_id={item.id}
+                    plan_id={selectedPlan}
+                    onDelete={() => handleDeleteExercise(item.id)}
+                    onEdit={() => handleEditExercise(item.id)}
+                  />
+                </View>
+              </View>
+            ))}
+            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+              <IconButton
+                icon="plus"
+                size={24}
+                iconColor="white"
+                style={styles.iconButton}
+              onPress={handleAddExerciseButtonPress}
+              disabled={selectedPlan === ''}
+            />
+          </View>
+          </ScrollView>
+        ) : (
+          // Mobil-spezifischer Code mit GestureHandler und DraggableFlatList
+          <GestureHandlerRootView style={{ flex: 1, width: '100%' }}>
+            <View style={{ width: screenWidth, paddingHorizontal: screenWidth > 1200 ? 300 : 20 }}>
               <DraggableFlatList
                 data={getExercisesByPlanId(selectedPlan)}
                 keyExtractor={(item) => `${selectedPlan}-${item.id}`}
                 onDragEnd={({ data }) => handleReorder(data)}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 renderItem={({ item, drag, isActive }: RenderItemParams<Exercise>) => (
+                  // Dein bestehender renderItem-Code
                   <View
                     style={{
                       flexDirection: 'row',
@@ -233,14 +291,14 @@ export default function Index() {
                     }}
                   >
                     {reorderMode && (
-                        <IconButton
-                          icon="drag"
-                          size={20}
-                          onPressIn={drag}
-                          style={{ marginRight: 8, marginLeft: 4 }}
-                          iconColor="#ccc"
-                        />
-                      )}
+                      <IconButton
+                        icon="drag"
+                        size={20}
+                        onPressIn={drag}
+                        style={{ marginRight: 8, marginLeft: 4 }}
+                        iconColor="#ccc"
+                      />
+                    )}
                     <View style={{ flex: 1 }}>
                       <ExerciseBox
                         {...item}
@@ -254,23 +312,29 @@ export default function Index() {
                 )}
               />
             </View>
-            </GestureHandlerRootView>
-       
-          <View style={{ justifyContent: 'flex-start' }}>   
+            {/* Plus Button bleibt unverändert */}
+        {isAtListEnd && (
+          <View style={{justifyContent: 'flex-start'}}>   
             <IconButton
-            icon="plus"
-            size={24}
-            iconColor="white"
-            style={styles.iconButton}
-            onPress={handleAddExerciseButtonPress}
-            disabled={selectedPlan === ''}
-          />
-         
-          
-        </View>
+              icon="plus"
+              size={24}
+              iconColor="white"
+              style={styles.iconButton}
+              onPress={handleAddExerciseButtonPress}
+              disabled={selectedPlan === ''}
+            />
+          </View>
+        )}
 
+          </GestureHandlerRootView>
+        )}
         
-      </ScrollView>
+        
+         
+       
+          
+        
+     
       <Dialog style={{ width: '70%', height: '30%', borderRadius: 20, alignSelf: 'center', backgroundColor: Constants.backgroundDark }} visible={showAddPlanDialog} onDismiss={() => setShowAddPlanDialog(false)}>
       <Dialog.Title style={{ color: '#fff' }}>Add New Plan</Dialog.Title>
       <Dialog.Content>

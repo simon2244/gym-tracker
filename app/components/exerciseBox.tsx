@@ -5,6 +5,7 @@ import { Text, TextInput } from 'react-native-paper';
 import Constants from '../constants';
 import { TextInput as RNTextInput } from 'react-native';
 import {usePlans} from '../context/planscontext';
+import  DifficultyMeter from './difficultyMeter';
 
 
 type ExerciseBoxProps = {
@@ -14,24 +15,28 @@ type ExerciseBoxProps = {
   sets: string;
   weight?: string;
   reps?: string;
+  difficulty?: number;
   onDelete: () => void;
   onEdit: () => void;
 }
 
-const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete, onEdit }: ExerciseBoxProps) => {
+const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, difficulty, onDelete, onEdit }: ExerciseBoxProps) => {
   const [exerciseName, setExerciseName] = useState(name || '');
   const [selectedWeight, setSelectedWeight] = useState(weight || '0');
   const [selectedReps, setSelectedReps] = useState(reps || '0');
   const [selectedSets, setSelectedSets] = useState(sets || '0');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(difficulty || 0);
   const { updateExerciseData } = usePlans();
+ 
+ 
   
 
   const exerciseNameRef = useRef<string>(exerciseName);
   const weightRef = useRef<string>(selectedWeight);
   const repsRef = useRef<string>(selectedReps);
   const setsRef = useRef<string>(selectedSets);
+  const difficultyRef = useRef<number>(selectedDifficulty);
 
-  
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef<RNTextInput>(null);
 
@@ -120,8 +125,9 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
               if (!exerciseName.trim()) {
                 setExerciseName(name);
                 exerciseNameRef.current = name;
-                console.log("das ist der neue Exercise name: " + exerciseNameRef.current);
-                updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current);
+              }else{
+                exerciseNameRef.current = exerciseName;
+                updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current, difficultyRef.current);
               }
               setIsEditing(false);
             }}
@@ -137,6 +143,25 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             <Text style={[styles.label, { alignSelf: 'flex-start' }]}>{exerciseName}</Text>
           </TouchableOpacity>
         )}
+        
+          <DifficultyMeter 
+            difficulty={difficulty ?? 0}
+            onChange={(value) => {
+              setSelectedDifficulty(value);
+              difficultyRef.current = value;
+              updateExerciseData(
+                plan_id, 
+                exercise_id, 
+                exerciseNameRef.current, 
+                weightRef.current, 
+                repsRef.current, 
+                setsRef.current,
+                difficultyRef.current
+              );
+            }}
+          />
+        
+  
       </View>
 
       <View
@@ -159,7 +184,7 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             setsRef.current = formatted;
           }}
 
-          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current) }}
+          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current, difficultyRef.current) }}
           keyboardType="numeric"
           style={styles.input}
           textColor="#fff"
@@ -187,7 +212,7 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             setSelectedWeight(formatted);
             weightRef.current = formatted;
           }}
-          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current)}}
+          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current, difficultyRef.current)}}
           keyboardType="decimal-pad"
           style={styles.input}
 
@@ -211,7 +236,7 @@ const ExerciseBox = ({ exercise_id, plan_id, name, sets, weight, reps, onDelete,
             repsRef.current = formatted;
           }}
 
-          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current)}}
+          onBlur={() => {updateExerciseData(plan_id, exercise_id, exerciseNameRef.current, weightRef.current, repsRef.current, setsRef.current, difficultyRef.current)}}
           keyboardType="numeric"
           style={styles.input}
           textColor="#fff"

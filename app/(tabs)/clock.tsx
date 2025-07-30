@@ -256,7 +256,11 @@ useEffect(() => {
           </Text>
 
           <Text style={styles.phaseText}>
-            {isRunning ? (isExercise ? 'Exercise' : 'Break') : 'Done'}
+            {!isRunning && timeLeft > 0
+              ? 'Pause'
+              : isRunning
+              ? (isExercise ? 'Exercise' : 'Break')
+              : 'Done'}
           </Text>
         </View>
       )}

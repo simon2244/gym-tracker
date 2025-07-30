@@ -8,6 +8,7 @@ export type Exercise = {
   sets: string;
   weight: string;
   reps: string;
+  difficulty: number; 
 };
 
 export type Plan = {
@@ -45,8 +46,12 @@ type PlanContextType = {
     exerciseName: string,
     selectedWeight: string,
     selectedReps: string,
-    selectedSets: string
+    selectedSets: string,
+    difficulty: number
   ) => void;
+
+  dailyOverrides: Record<string, string[]>;
+  setDailyOverrides: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
 };
 
 
@@ -73,6 +78,7 @@ export const PlansProvider = ({ children }: { children: React.ReactNode }) => {
         Sunday: [],
     });
     const [workoutLog, setWorkoutLog] = useState<WorkoutLogEntry[]>([]);
+    const [dailyOverrides, setDailyOverrides] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -119,11 +125,18 @@ export const PlansProvider = ({ children }: { children: React.ReactNode }) => {
         setSchedule(JSON.parse(storedSchedule));
       }
 
+       const storedOverrides = await AsyncStorage.getItem('gymDailyOverrides');
+        if (storedOverrides) {
+          setDailyOverrides(JSON.parse(storedOverrides));
+        }
+
       // WORKOUT LOG
       const storedWorkoutLog = await AsyncStorage.getItem('workoutLog');
       if (storedWorkoutLog) {
         setWorkoutLog(JSON.parse(storedWorkoutLog));
       }
+
+      
 
     } catch (err) {
       console.error('Fehler beim Laden der Daten', err);
@@ -151,6 +164,13 @@ useEffect(() => {
   }
 }, [workoutLog, isLoading]);
 
+// Speichere individuelle Tagesänderungen bei Änderungen
+  useEffect(() => {
+    if (Object.keys(dailyOverrides).length > 0) {
+      AsyncStorage.setItem('gymDailyOverrides', JSON.stringify(dailyOverrides));
+    }
+  }, [dailyOverrides]);
+
 
 
   const updateExerciseData = (
@@ -159,7 +179,8 @@ useEffect(() => {
   name: string,
   weight: string,
   reps: string,
-  sets: string
+  sets: string,
+  difficulty: number
     ) => {
     setPlans(prevPlans => {
         const updatedPlans = prevPlans.map(plan => {
@@ -177,6 +198,7 @@ useEffect(() => {
             weight,
             reps,
             sets,
+            difficulty
         };
 
         return { ...plan, exercises: updatedExercises };
@@ -193,7 +215,7 @@ useEffect(() => {
 
 
   return (
-    <PlanContext.Provider value={{ plans, setPlans, schedule, setSchedule, workoutLog, setWorkoutLog, isLoading, updateExerciseData }}>
+    <PlanContext.Provider value={{ plans, setPlans, schedule, setSchedule, workoutLog, setWorkoutLog, isLoading, updateExerciseData, dailyOverrides, setDailyOverrides }}>
       {children}
     </PlanContext.Provider>
   );
