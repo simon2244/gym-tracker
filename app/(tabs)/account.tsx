@@ -1,143 +1,79 @@
-import { useState, useEffect } from "react";
-import { StyleSheet, View, Alert } from "react-native";
-import { TextInput, Button, Title } from "react-native-paper";
-import { supabase } from "../context/supabase";
-import { Session } from "@supabase/supabase-js";
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import Constants from "../constants";
+import { View, StyleSheet } from 'react-native';
+import { Avatar, Text, ActivityIndicator, Surface } from 'react-native-paper';
+import { TouchableOpacity } from 'react-native';
 
-export default function Account({ session }: { session: Session }) {
-  const [loading, setLoading] = useState(true);
-  const [username, setUsername] = useState("");
-  const [website, setWebsite] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+export default function AuthAccountInfo() {
+    const [user, setUser] = useState<any>(null);
 
-  useEffect(() => {
-    if (session) getProfile();
-  }, [session]);
+    useEffect(() => {
+        const fetchUser = async () => {
+            const { data, error } = await supabase.auth.getUser();
+            if (!error) setUser(data.user);
+        };
+        fetchUser();
+    }, []);
 
-  async function getProfile() {
-    try {
-      setLoading(true);
-      if (!session?.user) throw new Error("No user on the session!");
-
-      const { data, error, status } = await supabase
-        .from("profiles")
-        .select("username, website, avatar_url")
-        .eq("id", session.user.id)
-        .single();
-
-      if (error && status !== 406) throw error;
-
-      if (data) {
-        setUsername(data.username || "");
-        setWebsite(data.website || "");
-        setAvatarUrl(data.avatar_url || "");
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert("Error", error.message);
-      }
-    } finally {
-      setLoading(false);
+    if (!user) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator animating color="#fff" />
+                <Text style={{ color: '#fff', marginTop: 16 }}>Loading account info...</Text>
+            </View>
+        );
     }
-  }
 
-  async function updateProfile({
-    username,
-    website,
-    avatar_url,
-  }: {
-    username: string;
-    website: string;
-    avatar_url: string;
-  }) {
-    try {
-      setLoading(true);
-      if (!session?.user) throw new Error("No user on the session!");
-
-      const updates = {
-        id: session.user.id,
-        username,
-        website,
-        avatar_url,
-        updated_at: new Date(),
-      };
-
-      const { error } = await supabase.from("profiles").upsert(updates);
-      if (error) throw error;
-    } catch (error) {
-      if (error instanceof Error) {
-        Alert.alert("Error", error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <View style={styles.container}>
-      <Title style={styles.title}>Account Settings</Title>
-
-      <TextInput
-        label="Email"
-        value={session?.user?.email || ""}
-        disabled
-        mode="outlined"
-        style={styles.input}
-      />
-
-      <TextInput
-        label="Username"
-        value={username}
-        onChangeText={setUsername}
-        mode="outlined"
-        style={styles.input}
-      />
-
-      <TextInput
-        label="Website"
-        value={website}
-        onChangeText={setWebsite}
-        mode="outlined"
-        style={styles.input}
-      />
-
-      <Button
-        mode="contained"
-        onPress={() =>
-          updateProfile({ username, website, avatar_url: avatarUrl })
-        }
-        loading={loading}
-        disabled={loading}
-        style={styles.button}
-      >
-        {loading ? "Loading..." : "Update"}
-      </Button>
-
-      <Button
-        mode="outlined"
-        onPress={() => supabase.auth.signOut()}
-        style={styles.button}
-      >
-        Sign Out
-      </Button>
-    </View>
-  );
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setUser(null);
+    };
+    return (
+        <Surface style={styles.surface}>
+            <View style={styles.profileContainer}>
+            <Avatar.Icon
+                size={96}
+                icon="account"
+                style={{ backgroundColor: '#222', marginBottom: 16 }}
+                color="#fff"
+            />
+            <Text style={styles.email}>{user.email}</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout}>
+                <Avatar.Icon
+                    size={48}
+                    icon="logout"
+                    style={{ backgroundColor: Constants.primaryBlue, marginBottom: 8 }}
+                    color="#fff"
+                />
+            </TouchableOpacity>
+        </Surface>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    flex: 1,
-    justifyContent: "center",
-  },
-  title: {
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 8,
-  },
+    surface: {
+        backgroundColor: Constants.backgroundDark,
+        minHeight: '100%',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: 48,
+    },
+    profileContainer: {
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    email: {
+        fontSize: 18,
+        fontWeight: '500',
+        color: '#fff',
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: Constants.backgroundDark,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });
