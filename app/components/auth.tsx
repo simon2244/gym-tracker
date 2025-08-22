@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Alert, AppState, KeyboardAvoidingView } from "react-native";
+import { Alert, AppState, KeyboardAvoidingView, Text } from "react-native";
 import { supabase } from "../lib/supabase";
 import {
   TextInput,
   Button,
-  useTheme,
-  Title,
-  Surface,
 } from "react-native-paper";
 import Constants from "../constants";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
@@ -15,6 +12,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alertText, setAlertText] = useState("");
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
@@ -33,13 +31,13 @@ export default function Auth() {
     
     // Validate inputs before sending to Supabase
     if (!email || !email.includes('@')) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
+      setAlertText("Invalid Email: Please enter a valid email address");
       setLoading(false);
       return;
     }
     
     if (!password) {
-      Alert.alert("Missing Password", "Please enter your password");
+      setAlertText("Missing Password: Please enter your password");
       setLoading(false);
       return;
     }
@@ -53,14 +51,14 @@ export default function Auth() {
       if (error) {
         console.error("Login error:", error);
         if (error.message.includes("Invalid login credentials")) {
-          Alert.alert("Login Failed", "Invalid email or password. Please check your credentials and try again.");
+          setAlertText("Login Failed: Invalid email or password. Please check your credentials and try again.");
         } else {
-          Alert.alert("Login Error", error.message);
+          setAlertText(`Login Error: ${error.message}`);
         }
       }
     } catch (err) {
       console.error("Unexpected error:", err);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      setAlertText("Error: An unexpected error occurred. Please try again.");
     }
     
     setLoading(false);
@@ -71,13 +69,13 @@ export default function Auth() {
     
     // Validate inputs before sending to Supabase
     if (!email || !email.includes('@')) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
+      setAlertText("Invalid Email: Please enter a valid email address");
       setLoading(false);
       return;
     }
     
     if (!password || password.length < 6) {
-      Alert.alert("Invalid Password", "Password must be at least 6 characters long");
+      setAlertText("Invalid Password: Password must be at least 6 characters long");
       setLoading(false);
       return;
     }
@@ -92,22 +90,22 @@ export default function Auth() {
         console.error("Signup error:", error);
         // Provide more specific error messages
         if (error.message.includes("already registered")) {
-          Alert.alert("Account Exists", "This email is already registered. Try signing in instead.");
+          setAlertText("Account Exists: This email is already registered. Try signing in instead.");
         } else if (error.message.includes("Password")) {
-          Alert.alert("Password Error", "Password must be at least 6 characters long");
+          setAlertText("Password Error: Password must be at least 6 characters long");
         } else if (error.message.includes("email")) {
-          Alert.alert("Email Error", "Please enter a valid email address");
+          setAlertText("Email Error: Please enter a valid email address");
         } else {
-          Alert.alert("Signup Error", error.message);
+          setAlertText(`Signup Error: ${error.message}`);
         }
       } else if (data.session) {
-        Alert.alert("Signup Successful", "You are now signed in!");
+        setAlertText("Signup Successful: You are now signed in!");
       } else {
-        Alert.alert("Check Your Email", "We've sent you a verification link. Please check your email and click the link to verify your account.");
+        setAlertText("Check Your Email: We've sent you a verification link. Please check your email and click the link to verify your account.");
       }
     } catch (err) {
       console.error("Unexpected error:", err);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      setAlertText("Error: An unexpected error occurred. Please try again.");
     }
     
     setLoading(false);
@@ -128,6 +126,9 @@ export default function Auth() {
           }}
           keyboardShouldPersistTaps="handled"
         >
+            <Text style={{ color: 'red', textAlign: 'center', marginBottom: 16, fontSize: 18, }}>
+              {alertText}
+            </Text>
           <TextInput
             label="Email"
             value={email}
@@ -188,7 +189,6 @@ const styles = {
   surface: {
     flex: 1,
     padding: 24,
-    // justifyContent: 'center' as const,
     backgroundColor: Constants.backgroundDark,
   },
   title: {
