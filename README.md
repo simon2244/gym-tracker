@@ -1,4 +1,4 @@
-# Gym Tracker 💪
+# Gym Tracker 
 
 A comprehensive fitness tracking application built with [Expo](https://expo.dev) that helps you manage your workout routines, track your progress, and stay organized with scheduling and timing features.
 
