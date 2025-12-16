@@ -14,11 +14,13 @@ View your workout schedule on an interactive calendar. Track which days you've c
 Built-in interval timer for timed workouts and rest periods. Perfect for HIIT training, circuit workouts, or any time-based exercises. Keep your workouts structured and efficient.
 
 ### Screenshots
-```markdown
-![Workout Plans](./screenshots/workoutplans_screenshot.jpg)
-![Calendar](./screenshots/calendar_scrreenshot.jpg)
-![Interval Timer](./screenshots/interval_timer_screenshot.jpg)
-```
+
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/f1cee763-d207-419a-a243-d77e5a1753ed" width="200" />
+  <img src="https://github.com/user-attachments/assets/ee358653-2426-485a-a91c-f072734d88eb" width="200" />
+  <img src="https://github.com/user-attachments/assets/a488283f-cf23-45b5-bb50-f8e04acb922e" width="200" />
+</p>
+
 
 
 
